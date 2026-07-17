@@ -87,3 +87,35 @@ func TestCheckWatchDriveMisconfigured(t *testing.T) {
 		t.Fatalf("expected watch.drive fail, got %+v", checks)
 	}
 }
+
+func TestCheckVoiceMemosDisabledSkip(t *testing.T) {
+	cfg := config.Defaults()
+	checks := checkVoiceMemos(&cfg)
+	if len(checks) != 1 || checks[0].Severity != Skip {
+		t.Fatalf("expected skip, got %+v", checks)
+	}
+	if !bytes.Contains([]byte(checks[0].Detail), []byte("not NoteStore")) {
+		t.Fatalf("detail should clarify Voice Memos ≠ NoteStore: %q", checks[0].Detail)
+	}
+}
+
+func TestCheckVoiceMemosExportDirProbe(t *testing.T) {
+	cfg := config.Defaults()
+	cfg.VoiceMemos.Enabled = true
+	cfg.VoiceMemos.ExportDir = t.TempDir()
+	checks := checkVoiceMemos(&cfg)
+	if len(checks) != 1 || checks[0].Severity != OK {
+		t.Fatalf("expected OK, got %+v", checks)
+	}
+
+	missing := filepath.Join(t.TempDir(), "missing-inbox")
+	// Parent exists but we make a file where the dir should be → ReadDir fails.
+	if err := os.WriteFile(missing, []byte("not-a-dir"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg.VoiceMemos.ExportDir = missing
+	checks = checkVoiceMemos(&cfg)
+	if len(checks) == 0 || checks[0].Severity != Fail {
+		t.Fatalf("expected Fail for non-dir inbox, got %+v", checks)
+	}
+}

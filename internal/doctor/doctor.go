@@ -122,6 +122,7 @@ func Run(ctx context.Context, opts Options) Report {
 
 	r.Checks = append(r.Checks, checkMemo(cfg))
 	r.Checks = append(r.Checks, checkGog(cfg))
+	r.Checks = append(r.Checks, checkVoiceMemos(cfg)...)
 	r.Checks = append(r.Checks, checkWatch(cfg)...)
 
 	return r
@@ -325,13 +326,94 @@ func checkGog(cfg *config.Config) Check {
 	return Check{Name: "bin.gog", Severity: OK, Detail: path}
 }
 
+func checkVoiceMemos(cfg *config.Config) []Check {
+	if !cfg.VoiceMemos.Enabled {
+		return []Check{{
+			Name:     "voice_memos",
+			Severity: Skip,
+			Detail:   "disabled (Voice Memos.app uses export inbox — not NoteStore wake)",
+		}}
+	}
+
+	dir := cfg.VoiceMemosExportDir()
+	if dir == "" {
+		return []Check{{
+			Name:     "voice_memos.export_dir",
+			Severity: Fail,
+			Detail:   "empty export_dir",
+			Fix:      "set voice_memos.export_dir in config.toml",
+		}}
+	}
+
+	var out []Check
+	if err := paths.EnsureDir(dir); err != nil {
+		out = append(out, Check{
+			Name:     "voice_memos.export_dir",
+			Severity: Fail,
+			Detail:   err.Error(),
+			Fix:      "fix permissions or voice_memos.export_dir (inbox under $HOME; not Voice Memos Group Container)",
+		})
+		return out
+	}
+
+	// Never Stat-only OK: must list and write-probe.
+	if _, err := os.ReadDir(dir); err != nil {
+		out = append(out, Check{
+			Name:     "voice_memos.export_dir",
+			Severity: Fail,
+			Detail:   "not readable: " + err.Error(),
+			Fix:      "chmod/chown " + dir + " — Voice Memos ingest is export inbox only, not NoteStore",
+		})
+		return out
+	}
+
+	probe := filepath.Join(dir, ".lazy-notes-doctor-write")
+	if err := os.WriteFile(probe, []byte("ok"), 0o644); err != nil {
+		out = append(out, Check{
+			Name:     "voice_memos.export_dir",
+			Severity: Fail,
+			Detail:   "not writable: " + err.Error(),
+			Fix:      "chmod/chown " + dir,
+		})
+		return out
+	}
+	_ = os.Remove(probe)
+
+	src := cfg.VoiceMemos.Source
+	if src == "" {
+		src = "export_inbox"
+	}
+	if src != "export_inbox" {
+		out = append(out, Check{
+			Name:     "voice_memos.source",
+			Severity: Fail,
+			Detail:   fmt.Sprintf("unsupported source %q", src),
+			Fix:      `set voice_memos.source = "export_inbox"`,
+		})
+		return out
+	}
+
+	detail := dir
+	if cfg.VoiceMemos.WatchEnabled {
+		detail += " (watch on)"
+	} else {
+		detail += " (watch off)"
+	}
+	out = append(out, Check{
+		Name:     "voice_memos.export_dir",
+		Severity: OK,
+		Detail:   detail,
+	})
+	return out
+}
+
 func checkWatch(cfg *config.Config) []Check {
 	var out []Check
 	if !cfg.Watch.AppleNotesEnabled {
 		out = append(out, Check{
 			Name:     "watch.apple_notes",
 			Severity: Skip,
-			Detail:   "disabled",
+			Detail:   "disabled (NoteStore wake only — not Voice Memos ingest)",
 		})
 	} else {
 		dbPath := cfg.AppleNotesDB()

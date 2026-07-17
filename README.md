@@ -1,6 +1,6 @@
 # lazy-notes
 
-Make → Homebrew. Lazy HF → SuperWhisper → harvest → Notes (disk + Apple Notes).
+Make → Homebrew. Lazy HF and/or Voice Memos export inbox → SuperWhisper → harvest → Notes (disk + Apple Notes).
 
 ```bash
 make install && lazy-notes onboard && make start
@@ -83,13 +83,27 @@ After SuperWhisper finishes, lazy-notes:
 
 Use `lazy-notes publish` to process submitted/harvested backlog; `make sync` and the daemon run harvest/publish automatically when `publish.enabled = true`.
 
-### Optional watchers
+### Inputs (what gets transcribed)
 
-The daemon can also react to filesystem / Drive events (debounced) instead of waiting for the next interval. Enable in `config.toml`:
+| Source | Config | Notes |
+|--------|--------|-------|
+| Hugging Face dataset | `dataset` + HF token | Default path; stays enabled when Voice Memos is on |
+| Voice Memos.app | `[voice_memos]` export inbox | Drop finished `.m4a` into `export_dir` (Shortcuts or manual). **Not** NoteStore. **Not** the Voice Memos Group Container. |
+
+```toml
+[voice_memos]
+enabled = true
+export_dir = "~/.local/share/lazy-notes/voice-memos-inbox"
+```
+
+### Optional wake watchers
+
+The daemon can also react to filesystem / Drive / inbox events (debounced) instead of waiting for the next interval. These **wake sync only** — they do not import Apple Notes bodies or read Voice Memos.app’s private container:
 
 | Setting | Purpose |
 |---------|---------|
-| `watch.apple_notes_enabled` | Watch Apple Notes `NoteStore.sqlite` (macOS Group Container) |
+| `voice_memos.enabled` + `watch_enabled` | Watch the Voice Memos **export inbox** for new `.m4a` files |
+| `watch.apple_notes_enabled` | Watch Apple Notes `NoteStore.sqlite` (wake only) |
 | `watch.drive_local_dir` | Watch a local Google Drive desktop sync directory |
 | `watch.drive_folder_id` | Poll Drive folder changes via `gog drive changes poll` |
 
@@ -107,7 +121,7 @@ gog auth add you@example.com --services drive
 | `lazy-notes onboard` | Step-by-step first-run setup, then `doctor` |
 | `lazy-notes doctor` | Check deps, config, HF auth, memo/gog, watchers |
 | `lazy-notes setup` | Config, SuperWhisper CLI, Note modes (non-interactive) |
-| `lazy-notes sync` | One HF → SuperWhisper pass (+ harvest/publish when enabled) |
+| `lazy-notes sync` | One HF + Voice Memos inbox → SuperWhisper pass (+ harvest/publish when enabled) |
 | `lazy-notes publish` | Harvest submitted + publish harvested backlog only |
 | `lazy-notes status` | Watermark and per-status counts (incl. harvested/published) |
 | `lazy-notes daemon` | Sync on interval (via `make start` / brew services) |

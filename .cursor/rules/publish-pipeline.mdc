@@ -1,6 +1,6 @@
 ---
 description: Publish pipeline semantics and verification gates
-globs: internal/publish/**/*.go,internal/sync/**/*.go,cmd/lazy-notes/publish.go,cmd/lazy-notes/daemon.go,config/config.example.toml
+globs: internal/publish/**/*.go,internal/sync/**/*.go,internal/voicememos/**/*.go,cmd/lazy-notes/publish.go,cmd/lazy-notes/daemon.go,config/config.example.toml
 alwaysApply: false
 ---
 
@@ -9,11 +9,13 @@ alwaysApply: false
 ## Data flow (do not invert)
 
 ```
-HF dataset → SuperWhisper → harvest → markdown → [memo Apple Notes] → [gog Drive]
+HF dataset ──┐
+             ├→ SuperWhisper → harvest → markdown → [memo Apple Notes] → [gog Drive]
+Voice Memos ─┘   (export inbox under $HOME; default-off)
 ```
 
-- Apple Notes / NoteStore watch **triggers sync only**; it does not ingest note bodies.
-- macOS Voice Memos is **not** a source.
+- Apple Notes / NoteStore watch **triggers sync only**; it does not ingest note bodies or Voice Memos.
+- Voice Memos.app ingest is **`[voice_memos]` export inbox only** — not Group Container, not `watch.apple_notes_*`.
 - `publish.drive_*` (upload) is separate from `watch.drive_*` (sync wake).
 
 ## Config gates
@@ -23,21 +25,23 @@ HF dataset → SuperWhisper → harvest → markdown → [memo Apple Notes] → 
 | Any harvest/publish | `publish.enabled = true` |
 | Apple Notes | `memo_enabled` + working `memo` / Automation |
 | Drive upload | `drive_enabled` + non-empty `drive_folder_id` + `gog` auth (+ prefer `gog_account`) |
+| Voice Memos ingest | `voice_memos.enabled` + readable/writable `export_dir` |
 | NoteStore wake | `watch.apple_notes_enabled` + Full Disk Access for the **service** binary |
 
 ## Failure semantics to preserve / harden
 
 - `MarkPublished` only after all enabled sinks succeed.
 - Drive/memo failure must not silently look like success; avoid unbounded `syncMu` hangs (timeouts).
-- Daemon sync must not skip harvest/publish backlog when only HF `VerifyAccess` fails — `lazy-notes publish` is the backlog path.
+- Daemon sync must not skip Voice Memos or harvest/publish backlog when only HF `VerifyAccess` fails.
 - Doctor PATH/`Stat` greens are not e2e proof; prove with disk note + Notes folder (+ Drive if enabled).
+- Voice Memos doctor must **ReadDir + write probe** the inbox — never Stat-only OK.
 
 ## Solmigo verification before claiming publish works
 
 ```bash
 lazy-notes doctor
 lazy-notes status
-lazy-notes publish   # or sync when new HF clips exist
+lazy-notes publish   # or sync when new HF / inbox clips exist
 ls -lt ~/.local/share/lazy-notes/notes | head
 # Apple Notes folder publish.memo_folder (default Lazy Notes)
 ```

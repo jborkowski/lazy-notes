@@ -22,7 +22,7 @@ func WriteMarkdown(notesDir string, n Note) (path string, err error) {
 	}
 
 	title := ResolveTitle(n)
-	name := fmt.Sprintf("%d-%s.md", n.RecordingID, slugTitle(title))
+	name := fmt.Sprintf("%s-%s.md", recordingFileID(n.RecordingID), slugTitle(title))
 	path = filepath.Join(dir, name)
 
 	content := buildMarkdownFile(n, time.Now().UTC())
@@ -59,6 +59,14 @@ func buildMarkdownFile(n Note, created time.Time) string {
 		b.WriteString(body)
 	}
 	return b.String()
+}
+
+// recordingFileID formats the note filename id. Voice Memo negatives become vm{N}.
+func recordingFileID(id int64) string {
+	if id < 0 {
+		return fmt.Sprintf("vm%d", -id)
+	}
+	return fmt.Sprintf("%d", id)
 }
 
 func slugTitle(title string) string {

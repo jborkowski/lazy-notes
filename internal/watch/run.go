@@ -27,6 +27,11 @@ type Options struct {
 	GogBin                string
 	GogAccount            string
 	DriveChangesStateFile string
+
+	// Voice Memos export inbox (not NoteStore / not Group Container recordings).
+	VoiceMemosEnabled    bool
+	VoiceMemosExportDir  string
+	VoiceMemosExtensions []string
 }
 
 // OptionsFromConfig builds watch Options from lazy-notes config.
@@ -46,12 +51,18 @@ func OptionsFromConfig(cfg *config.Config) Options {
 		GogBin:                cfg.GogBin(),
 		GogAccount:            cfg.Publish.GogAccount,
 		DriveChangesStateFile: stateFile,
+		VoiceMemosEnabled:     cfg.VoiceMemos.Enabled && cfg.VoiceMemos.WatchEnabled,
+		VoiceMemosExportDir:   cfg.VoiceMemosExportDir(),
+		VoiceMemosExtensions:  cfg.VoiceMemos.Extensions,
 	}
 }
 
 // Enabled reports whether any watcher is turned on.
 func (o Options) Enabled() bool {
 	if o.AppleNotesEnabled {
+		return true
+	}
+	if o.VoiceMemosEnabled && o.VoiceMemosExportDir != "" {
 		return true
 	}
 	if !o.DriveEnabled {
@@ -105,6 +116,17 @@ func Run(ctx context.Context, opts Options, onTrigger TriggerFunc) error {
 		}
 		start("apple-notes", func() error {
 			return WatchAppleNotes(ctx, db, fire)
+		})
+	}
+
+	if opts.VoiceMemosEnabled && opts.VoiceMemosExportDir != "" {
+		dir := opts.VoiceMemosExportDir
+		if err := EnsureVoiceMemosInbox(dir); err != nil {
+			return fmt.Errorf("voice memos inbox: %w", err)
+		}
+		exts := opts.VoiceMemosExtensions
+		start("voice-memos-inbox", func() error {
+			return WatchVoiceMemosInbox(ctx, dir, exts, fire)
 		})
 	}
 

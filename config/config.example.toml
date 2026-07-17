@@ -53,7 +53,8 @@ gog_bin = "gog"
 # gog_account = "you@example.com"
 
 [watch]
-# Coalesce NoteStore / Drive bursts before triggering a sync pass.
+# Coalesce NoteStore / Drive / Voice Memos inbox bursts before triggering a sync pass.
+# NoteStore watch is wake-only — it does NOT ingest Voice Memos.app recordings.
 debounce_ms = 1500
 # Filesystem watch of Apple Notes SQLite (macOS). Triggers daemon sync on change.
 apple_notes_enabled = false
@@ -63,3 +64,14 @@ drive_enabled = false
 drive_local_dir = ""
 drive_folder_id = ""
 drive_poll_interval_seconds = 60
+
+# Voice Memos.app → SuperWhisper via export inbox (not NoteStore, not Group Container).
+# Drop finished .m4a files here (Shortcuts or manual export), then sync/daemon submits them.
+[voice_memos]
+enabled = false
+source = "export_inbox"
+export_dir = "~/.local/share/lazy-notes/voice-memos-inbox"
+watch_enabled = true
+min_duration_seconds = 1.0
+language = "auto"
+extensions = [".m4a"]

@@ -22,8 +22,8 @@ var daemonCmd = &cobra.Command{
 	Short: "Run sync on an interval until stopped",
 	Long: `Runs sync immediately, then repeats every sync.interval_seconds from config until SIGINT or SIGTERM.
 
-Optional watchers (config [watch]) also trigger a sync pass when Apple Notes
-NoteStore.sqlite or a Google Drive directory/folder changes.`,
+Optional watchers also trigger a sync pass when the Voice Memos export inbox,
+Apple Notes NoteStore.sqlite (wake only), or a Google Drive directory/folder changes.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return withConfigDB(func(cfg *config.Config, database *db.DB) error {
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

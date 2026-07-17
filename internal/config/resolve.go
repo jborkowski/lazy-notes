@@ -128,6 +128,11 @@ func (c *Config) DriveLocalDir() string {
 	return expandPath(c.Watch.DriveLocalDir)
 }
 
+// VoiceMemosExportDir returns the expanded Voice Memos export inbox path.
+func (c *Config) VoiceMemosExportDir() string {
+	return expandPath(c.VoiceMemos.ExportDir)
+}
+
 // ResolvePrompt returns prompt markdown for lang from inline Text or a file under configDir.
 func (c *Config) ResolvePrompt(lang string, configDir string) (string, error) {
 	spec, ok := c.Prompts.forLang(lang)

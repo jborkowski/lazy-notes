@@ -27,8 +27,20 @@ type Config struct {
 	Modes       ModesConfig   `toml:"modes"`
 	Model       ModelConfig   `toml:"model"`
 	Prompts     PromptsConfig `toml:"prompts"`
-	Publish     PublishConfig `toml:"publish"`
-	Watch       WatchConfig   `toml:"watch"`
+	Publish     PublishConfig     `toml:"publish"`
+	Watch       WatchConfig       `toml:"watch"`
+	VoiceMemos  VoiceMemosConfig  `toml:"voice_memos"`
+}
+
+// VoiceMemosConfig ingests macOS Voice Memos via an export inbox (not NoteStore).
+type VoiceMemosConfig struct {
+	Enabled            bool     `toml:"enabled"`
+	Source             string   `toml:"source"` // export_inbox (MVP)
+	ExportDir          string   `toml:"export_dir"`
+	WatchEnabled       bool     `toml:"watch_enabled"`
+	MinDurationSeconds float64  `toml:"min_duration_seconds"`
+	Language           string   `toml:"language"`
+	Extensions         []string `toml:"extensions"`
 }
 
 // SyncConfig controls background sync timing and filters.
@@ -170,6 +182,15 @@ func Defaults() Config {
 			AppleNotesDB:          "~/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite",
 			DrivePollIntervalSecs: 60,
 		},
+		VoiceMemos: VoiceMemosConfig{
+			Enabled:            false,
+			Source:             "export_inbox",
+			ExportDir:          "~/.local/share/lazy-notes/voice-memos-inbox",
+			WatchEnabled:       true,
+			MinDurationSeconds: 1.0,
+			Language:           "auto",
+			Extensions:         []string{".m4a"},
+		},
 	}
 }
 
@@ -272,6 +293,21 @@ func (c *Config) applyMissingDefaults() {
 	}
 	if c.Watch.DrivePollIntervalSecs == 0 {
 		c.Watch.DrivePollIntervalSecs = def.Watch.DrivePollIntervalSecs
+	}
+	if c.VoiceMemos.Source == "" {
+		c.VoiceMemos.Source = def.VoiceMemos.Source
+	}
+	if c.VoiceMemos.ExportDir == "" {
+		c.VoiceMemos.ExportDir = def.VoiceMemos.ExportDir
+	}
+	if c.VoiceMemos.MinDurationSeconds == 0 {
+		c.VoiceMemos.MinDurationSeconds = def.VoiceMemos.MinDurationSeconds
+	}
+	if c.VoiceMemos.Language == "" {
+		c.VoiceMemos.Language = def.VoiceMemos.Language
+	}
+	if len(c.VoiceMemos.Extensions) == 0 {
+		c.VoiceMemos.Extensions = def.VoiceMemos.Extensions
 	}
 }
 
