@@ -44,6 +44,14 @@ Formula source: [`Formula/lazy-notes.rb`](https://github.com/jborkowski/lazy-not
 
 Binary archives for macOS (arm64 / amd64 / universal) are attached to [GitHub Releases](https://github.com/jborkowski/lazy-notes/releases).
 
+## Release
+
+```bash
+make release VERSION=X.Y.Z
+```
+
+Bump Formula → tag → upload GitHub archives → pin Formula revision. See [`scripts/release.sh`](scripts/release.sh).
+
 ## Brew service
 
 The formula registers a background daemon (`lazy-notes daemon`):

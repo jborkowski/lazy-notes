@@ -1,47 +1,20 @@
 ---
-description: Legit install on Solmigo and GitHub release publishing
+description: Codified GitHub release (bump/tag/upload/pin only)
 alwaysApply: true
 ---
 
-# Release & install (Solmigo)
-
-## Install (only legit path)
-
-On Solmigo, install via Make → Homebrew. Do **not** copy `bin/lazy-notes` into PATH by hand.
+# Release
 
 ```bash
-cd /Users/jonatan/sources/lazy-notes
-make install          # deps + pack local tap + brew install --build-from-source
-lazy-notes doctor
-make start            # brew services
+make release VERSION=X.Y.Z
 ```
 
-- Formula: `jborkowski/lazy-notes/lazy-notes`
-- Logs: `$(brew --prefix)/var/log/lazy-notes.{log,err.log}`
-- Daemon HF token: `~/.config/lazy-notes/hf_token` (not only `hf auth login`)
-
-## Version bump + tag
-
-1. Land features on `main` first.
-2. `release: bump to vX.Y.Z` — update `Formula/lazy-notes.rb` `version` and git `tag:`.
-3. Tag that commit: `git tag -a vX.Y.Z -m "release: vX.Y.Z"`.
-4. Build + upload macOS archives to the GitHub release (at least `darwin-arm64` for Solmigo).
-5. `chore: pin Formula git revision to vX.Y.Z` with the tagged commit SHA.
-
-## Release artifact layout (darwin-arm64)
-
-```
-lazy-notes-vX.Y.Z-darwin-arm64/
-  lazy-notes
-  README.md
-  config/
-checksums.txt   # sha256 of tarballs
-```
-
-Build:
+Runs [`scripts/release.sh`](scripts/release.sh): Formula bump → tag/push → build archives → `gh release create` → pin Formula revision.
 
 ```bash
-GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/.../lazy-notes ./cmd/lazy-notes
+make release-dry VERSION=X.Y.Z
+make dist-arm64 VERSION=X.Y.Z
+make release VERSION=X.Y.Z ARCHS=arm64,amd64,universal
 ```
 
-Upload with `gh release create` / `gh release upload`. Prefer matching prior asset names.
+Do not re-derive this in chat. Fix the script if broken. Release scope excludes install/services.
