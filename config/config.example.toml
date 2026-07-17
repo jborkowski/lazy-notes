@@ -1,0 +1,48 @@
+dataset = "j14i/voice-memories"
+audio_prefer = "original" # original | processed
+languages = ["pl", "en", "es"]
+
+# Private dataset auth (optional if HF_TOKEN / `hf auth login`):
+# hf_token_file = "~/.config/lazy-notes/hf_token"
+
+[sync]
+interval_seconds = 900
+min_duration_seconds = 1.0
+submit_delay_seconds = 3.0
+lazy_start = true      # first run: jump to latest id, no history backfill
+max_per_sync = 5       # max clips submitted per pass
+keep_audio = false     # delete extracted audio after SuperWhisper submit
+keep_shards = false    # delete parquet after use (don't fill the disk)
+
+[modes]
+pl = "lazy-note-pl"
+en = "lazy-note-en"
+es = "lazy-note-es"
+fallback = "lazy-note-en"
+
+[model]
+voice_model_id = "sw-elevenlabs-scribe"
+language_model_id = "claude-sonnet-4-6"
+
+[model.pl]
+language_model_id = "claude-sonnet-4-6"
+
+[model.en]
+voice_model_id = "nvidia_parakeet-v2_476MB"
+language_model_id = "gemini-3.1-flash-lite-preview"
+
+[prompts.pl]
+file = "prompts/note.pl.md"
+
+[prompts.en]
+file = "prompts/note.en.md"
+
+[prompts.es]
+file = "prompts/note.es.md"
+
+[publish]
+enabled = true
+notes_dir = "~/.local/share/lazy-notes/notes"   # post-processed markdown notes
+memo_enabled = true
+memo_folder = "Lazy Notes"   # Apple Notes folder for memo CLI
+memo_bin = "memo"            # override path optional
