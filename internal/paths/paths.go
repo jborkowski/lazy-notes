@@ -93,6 +93,17 @@ func home() string {
 }
 
 func expand(p string) string {
+	return Expand(p)
+}
+
+// Expand resolves a leading ~ to the user home directory.
+func Expand(p string) string {
+	if p == "" {
+		return ""
+	}
+	if p == "~" {
+		return home()
+	}
 	if len(p) > 0 && p[0] == '~' {
 		return filepath.Join(home(), p[1:])
 	}

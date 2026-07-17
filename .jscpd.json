@@ -1,0 +1,13 @@
+{
+  "threshold": 1,
+  "minLines": 5,
+  "minTokens": 50,
+  "reporters": ["console"],
+  "ignore": [
+    "**/.git/**",
+    "**/vendor/**",
+    "**/go.sum",
+    "**/bin/**",
+    "**/.jscpd-report/**"
+  ]
+}

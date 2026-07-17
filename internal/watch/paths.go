@@ -1,29 +1,17 @@
 package watch
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jborkowski/lazy-notes/internal/paths"
 )
 
 // DefaultAppleNotesDB is the standard macOS Apple Notes NoteStore path.
 const DefaultAppleNotesDB = "~/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite"
 
 func expandHome(p string) string {
-	if p == "" {
-		return ""
-	}
-	if strings.HasPrefix(p, "~/") || p == "~" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return p
-		}
-		if p == "~" {
-			return home
-		}
-		return filepath.Join(home, p[2:])
-	}
-	return p
+	return paths.Expand(p)
 }
 
 // isNotesStoreName reports whether name is NoteStore.sqlite or a WAL/SHM sibling.

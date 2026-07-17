@@ -93,12 +93,5 @@ func expandPath(p string) (string, error) {
 	if p == "" {
 		return "", fmt.Errorf("notes dir is empty")
 	}
-	if len(p) > 0 && p[0] == '~' {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("expand path %q: %w", p, err)
-		}
-		return filepath.Join(home, p[1:]), nil
-	}
-	return p, nil
+	return paths.Expand(p), nil
 }

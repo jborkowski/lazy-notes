@@ -5,7 +5,7 @@ TAP     := jborkowski/lazy-notes
 FORMULA := $(TAP)/lazy-notes
 export HOMEBREW_NO_AUTO_UPDATE ?= 1
 
-.PHONY: all help deps tap pack install setup start stop restart status sync logs uninstall
+.PHONY: all help deps tap pack install setup start stop restart status sync logs uninstall jscpd test
 
 all: install
 
@@ -15,7 +15,15 @@ help:
 	@echo "make setup      lazy-notes onboard (step-by-step + doctor)"
 	@echo "make start|stop|restart"
 	@echo "make status|sync|logs"
+	@echo "make test       go test ./..."
+	@echo "make jscpd      copy/paste detector (npx jscpd)"
 	@echo "make uninstall"
+
+test:
+	go test ./...
+
+jscpd:
+	npx --yes jscpd . --config .jscpd.json
 
 # If `brew install lazy-notes` fails to resolve memo/gogcli (tap-prefixed depends_on),
 # run `make deps` first — it taps those formulas and installs them explicitly.

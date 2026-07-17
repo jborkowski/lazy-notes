@@ -4,17 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/jborkowski/lazy-notes/internal/paths"
 )
 
 func expandPath(p string) string {
-	if len(p) > 0 && p[0] == '~' {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return p
-		}
-		return filepath.Join(home, p[1:])
-	}
-	return p
+	return paths.Expand(p)
 }
 
 func (m ModesConfig) forLang(lang string) string {

@@ -13,13 +13,8 @@ import (
 // WatchDriveLocal watches a local Google Drive desktop sync directory.
 func WatchDriveLocal(ctx context.Context, dir string, onChange func(reason string)) error {
 	dir = expandHome(dir)
-	if dir == "" {
-		return fmt.Errorf("drive local dir is empty")
-	}
-	if st, err := os.Stat(dir); err != nil {
-		return fmt.Errorf("drive local dir %q: %w", dir, err)
-	} else if !st.IsDir() {
-		return fmt.Errorf("drive local dir %q is not a directory", dir)
+	if err := requireDir(dir, "drive local dir"); err != nil {
+		return err
 	}
 
 	watcher, err := fsnotify.NewWatcher()
@@ -34,30 +29,17 @@ func WatchDriveLocal(ctx context.Context, dir string, onChange func(reason strin
 
 	slog.Info("watching Google Drive local directory", "dir", dir)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return nil
+	return runWatcher(ctx, watcher, "drive local", func(ev fsnotify.Event) {
+		if ev.Op&fsnotify.Create != 0 {
+			if st, err := os.Stat(ev.Name); err == nil && st.IsDir() {
+				_ = watcher.Add(ev.Name)
 			}
-			slog.Warn("drive local watch error", "err", err)
-		case ev, ok := <-watcher.Events:
-			if !ok {
-				return nil
-			}
-			if ev.Op&fsnotify.Create != 0 {
-				if st, err := os.Stat(ev.Name); err == nil && st.IsDir() {
-					_ = watcher.Add(ev.Name)
-				}
-			}
-			if ev.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Rename|fsnotify.Remove) == 0 {
-				continue
-			}
-			onChange("drive-local:" + filepath.Base(ev.Name))
 		}
-	}
+		if ev.Op&mutateEvents == 0 {
+			return
+		}
+		onChange("drive-local:" + filepath.Base(ev.Name))
+	})
 }
 
 func addRecursive(w *fsnotify.Watcher, root string) error {

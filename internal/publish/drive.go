@@ -1,13 +1,14 @@
 package publish
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/jborkowski/lazy-notes/internal/excmd"
 )
 
 // PushDrive uploads localPath into the Drive folder identified by folderID using gog-cli.
@@ -41,19 +42,8 @@ func PushDrive(ctx context.Context, gogBin, account, folderID, localPath string)
 		args = append([]string{"--account", account}, args...)
 	}
 
-	cmd := exec.CommandContext(ctx, bin, args...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		msg := strings.TrimSpace(stderr.String())
-		if msg == "" {
-			msg = strings.TrimSpace(stdout.String())
-		}
-		if msg == "" {
-			return fmt.Errorf("gog drive upload: %w", err)
-		}
-		return fmt.Errorf("gog drive upload: %w: %s", err, msg)
+	if _, err := excmd.Run(ctx, bin, args...); err != nil {
+		return fmt.Errorf("gog drive upload: %w", err)
 	}
 	return nil
 }

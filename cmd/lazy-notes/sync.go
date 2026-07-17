@@ -1,9 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
+	"github.com/jborkowski/lazy-notes/internal/config"
+	"github.com/jborkowski/lazy-notes/internal/db"
 	lnsync "github.com/jborkowski/lazy-notes/internal/sync"
 	"github.com/spf13/cobra"
 )
@@ -12,24 +13,14 @@ var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Run one sync pass from Hugging Face to SuperWhisper",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := loadConfig()
-		if err != nil {
-			return exitErr(err)
-		}
-
-		database, err := openDB()
-		if err != nil {
-			return exitErr(err)
-		}
-		defer database.Close()
-
-		result, err := lnsync.Run(context.Background(), cfg, database)
-		if err != nil {
-			return exitErr(fmt.Errorf("sync: %w", err))
-		}
-
-		printSyncResult(result)
-		return nil
+		return withConfigDB(func(cfg *config.Config, database *db.DB) error {
+			result, err := lnsync.Run(cmd.Context(), cfg, database)
+			if err != nil {
+				return exitErr(fmt.Errorf("sync: %w", err))
+			}
+			printSyncResult(result)
+			return nil
+		})
 	},
 }
 

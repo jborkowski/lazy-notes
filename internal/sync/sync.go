@@ -337,22 +337,8 @@ func fallbackLang(cfg *config.Config) string {
 }
 
 func tokenFromConfig(cfg *config.Config) string {
-	if t := hf.DefaultToken(); t != "" {
-		return t
+	if cfg == nil {
+		return hf.DefaultToken()
 	}
-	if cfg.HfTokenFile == "" {
-		return ""
-	}
-	path := cfg.HfTokenFile
-	if strings.HasPrefix(path, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			path = filepath.Join(home, path[2:])
-		}
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(b))
+	return hf.ResolveToken(cfg.HfTokenFile)
 }

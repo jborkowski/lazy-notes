@@ -241,17 +241,15 @@ func checkModes(cfg *config.Config) Check {
 }
 
 func checkHFToken(cfg *config.Config) Check {
-	if hf.DefaultToken() != "" {
+	if token := hf.ResolveToken(cfg.HfTokenFile); token != "" {
+		detail := hf.TokenSource()
+		if detail == "" && cfg.HfTokenFile != "" {
+			detail = "file:" + paths.Expand(cfg.HfTokenFile)
+		}
 		return Check{
 			Name:     "hf.token",
 			Severity: OK,
-			Detail:   hf.TokenSource(),
-		}
-	}
-	if cfg.HfTokenFile != "" {
-		path := expandHome(cfg.HfTokenFile)
-		if b, err := os.ReadFile(path); err == nil && strings.TrimSpace(string(b)) != "" {
-			return Check{Name: "hf.token", Severity: OK, Detail: "file:" + path}
+			Detail:   detail,
 		}
 	}
 	return Check{
@@ -263,12 +261,7 @@ func checkHFToken(cfg *config.Config) Check {
 }
 
 func checkHFAccess(ctx context.Context, cfg *config.Config) Check {
-	token := hf.DefaultToken()
-	if token == "" && cfg.HfTokenFile != "" {
-		if b, err := os.ReadFile(expandHome(cfg.HfTokenFile)); err == nil {
-			token = strings.TrimSpace(string(b))
-		}
-	}
+	token := hf.ResolveToken(cfg.HfTokenFile)
 	client := hf.NewClient(cfg.Dataset, token, filepath.Join(paths.CacheDir(), "hf"))
 	if err := client.VerifyAccess(ctx); err != nil {
 		return Check{
@@ -419,13 +412,3 @@ func checkWatch(cfg *config.Config) []Check {
 	return out
 }
 
-func expandHome(p string) string {
-	if strings.HasPrefix(p, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return p
-		}
-		return filepath.Join(home, p[2:])
-	}
-	return p
-}

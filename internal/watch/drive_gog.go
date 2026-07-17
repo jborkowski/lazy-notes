@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/jborkowski/lazy-notes/internal/excmd"
 )
 
 // DriveGogOptions configures Google Drive change polling via gog-cli.
@@ -104,22 +106,12 @@ func pollDriveChangesOnce(
 		args = append([]string{"--account", account}, args...)
 	}
 
-	cmd := cmdCtx(ctx, bin, args...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		msg := strings.TrimSpace(stderr.String())
-		if msg == "" {
-			msg = strings.TrimSpace(stdout.String())
-		}
-		if msg == "" {
-			return 0, err
-		}
-		return 0, fmt.Errorf("%w: %s", err, msg)
+	stdout, err := excmd.RunCmd(cmdCtx(ctx, bin, args...))
+	if err != nil {
+		return 0, err
 	}
 
-	raw := bytes.TrimSpace(stdout.Bytes())
+	raw := bytes.TrimSpace(stdout)
 	if len(raw) == 0 || string(raw) == "null" {
 		return 0, nil
 	}

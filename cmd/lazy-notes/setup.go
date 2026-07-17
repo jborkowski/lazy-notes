@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/jborkowski/lazy-notes/internal/config"
 	"github.com/jborkowski/lazy-notes/internal/hf"
@@ -43,24 +42,9 @@ For a guided first-run checklist with doctor at the end, prefer: lazy-notes onbo
 		if err != nil {
 			return exitErr(fmt.Errorf("install modes: %w", err))
 		}
-		if len(installed) > 0 {
-			fmt.Fprintf(os.Stdout, "Installed modes: %v\n", installed)
-		} else {
-			fmt.Fprintln(os.Stdout, "Modes already installed (use --force to overwrite)")
-		}
+		printModesInstalled(installed)
 
-		token := hf.DefaultToken()
-		if token == "" && cfg.HfTokenFile != "" {
-			path := cfg.HfTokenFile
-			if strings.HasPrefix(path, "~/") {
-				if home, err := os.UserHomeDir(); err == nil {
-					path = home + path[1:]
-				}
-			}
-			if b, err := os.ReadFile(path); err == nil {
-				token = strings.TrimSpace(string(b))
-			}
-		}
+		token := hf.ResolveToken(cfg.HfTokenFile)
 		client := hf.NewClient(cfg.Dataset, token, paths.CacheDir()+"/hf")
 		if src := hf.TokenSource(); src != "" {
 			fmt.Fprintf(os.Stdout, "HF token: %s\n", src)

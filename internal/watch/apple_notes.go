@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
@@ -17,46 +16,26 @@ func WatchAppleNotes(ctx context.Context, dbPath string, onChange func(reason st
 	if dbPath == "" {
 		return fmt.Errorf("apple notes db path is empty")
 	}
-
 	dir := filepath.Dir(dbPath)
-	if st, err := os.Stat(dir); err != nil {
-		return fmt.Errorf("apple notes dir %q: %w", dir, err)
-	} else if !st.IsDir() {
-		return fmt.Errorf("apple notes dir %q is not a directory", dir)
+	if err := requireDir(dir, "apple notes dir"); err != nil {
+		return err
 	}
 
-	watcher, err := fsnotify.NewWatcher()
+	watcher, err := newDirWatcher(dir)
 	if err != nil {
-		return fmt.Errorf("fsnotify: %w", err)
+		return err
 	}
 	defer watcher.Close()
 
-	if err := watcher.Add(dir); err != nil {
-		return fmt.Errorf("watch %q: %w", dir, err)
-	}
-
 	slog.Info("watching Apple Notes SQLite", "db", dbPath, "dir", dir)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return nil
-			}
-			slog.Warn("apple notes watch error", "err", err)
-		case ev, ok := <-watcher.Events:
-			if !ok {
-				return nil
-			}
-			if !isNotesStoreName(ev.Name) {
-				continue
-			}
-			if ev.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Rename|fsnotify.Remove) == 0 {
-				continue
-			}
-			onChange("apple-notes:" + filepath.Base(ev.Name))
+	return runWatcher(ctx, watcher, "apple notes", func(ev fsnotify.Event) {
+		if !isNotesStoreName(ev.Name) {
+			return
 		}
-	}
+		if ev.Op&mutateEvents == 0 {
+			return
+		}
+		onChange("apple-notes:" + filepath.Base(ev.Name))
+	})
 }

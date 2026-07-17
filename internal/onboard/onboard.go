@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/jborkowski/lazy-notes/internal/config"
 	"github.com/jborkowski/lazy-notes/internal/doctor"
@@ -170,21 +169,8 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 }
 
 func resolveToken(cfg *config.Config) string {
-	if t := hf.DefaultToken(); t != "" {
-		return t
+	if cfg == nil {
+		return hf.DefaultToken()
 	}
-	if cfg == nil || cfg.HfTokenFile == "" {
-		return ""
-	}
-	path := cfg.HfTokenFile
-	if strings.HasPrefix(path, "~/") {
-		if home, err := os.UserHomeDir(); err == nil {
-			path = filepath.Join(home, path[2:])
-		}
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(b))
+	return hf.ResolveToken(cfg.HfTokenFile)
 }
