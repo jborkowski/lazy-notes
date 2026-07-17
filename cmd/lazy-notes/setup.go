@@ -66,9 +66,9 @@ var setupCmd = &cobra.Command{
 		if err := client.VerifyAccess(ctx); err != nil {
 			fmt.Fprintln(os.Stderr)
 			fmt.Fprintln(os.Stderr, "Hugging Face auth required (dataset is private):")
-			fmt.Fprintln(os.Stderr, "  1. hf auth login")
+			fmt.Fprintln(os.Stderr, "  1. echo hf_... > ~/.config/lazy-notes/hf_token   # canonical for brew service")
 			fmt.Fprintln(os.Stderr, "  2. or: export HF_TOKEN=hf_...")
-			fmt.Fprintln(os.Stderr, "  3. or: echo hf_... > ~/.config/lazy-notes/hf_token")
+			fmt.Fprintln(os.Stderr, "  3. or: hf auth login")
 			fmt.Fprintln(os.Stderr, "  4. or set hf_token_file in config.toml")
 			return exitErr(fmt.Errorf("hf auth: %w", err))
 		}

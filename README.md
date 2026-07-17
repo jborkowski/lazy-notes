@@ -87,4 +87,18 @@ First run jumps to the latest recording id; then max 5 clips per pass; deletes a
 
 ## HF auth
 
-`hf auth login` or `HF_TOKEN`.
+Private datasets need a token. Lookup order:
+
+1. `HF_TOKEN` / `HUGGING_FACE_HUB_TOKEN`
+2. `HF_TOKEN_PATH` (brew service sets this to `~/.config/lazy-notes/hf_token`)
+3. `~/.config/lazy-notes/hf_token` — **canonical file for the daemon**
+4. `hf auth login` locations (`$HF_HOME/token`, `~/.cache/huggingface/token`, …)
+
+```bash
+mkdir -p ~/.config/lazy-notes
+chmod 700 ~/.config/lazy-notes
+echo 'hf_...' > ~/.config/lazy-notes/hf_token
+chmod 600 ~/.config/lazy-notes/hf_token
+```
+
+Or set `hf_token_file` in `config.toml`.

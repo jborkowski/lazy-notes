@@ -7,7 +7,11 @@ import (
 )
 
 // DefaultToken reads a Hugging Face token for private datasets.
-// Order: env vars, then common hf CLI token file locations.
+// Order:
+//  1. HF_TOKEN / HUGGING_FACE_HUB_TOKEN
+//  2. HF_TOKEN_PATH (file)
+//  3. ~/.config/lazy-notes/hf_token  (canonical for brew service / daemon)
+//  4. $HF_HOME/token and other hf CLI locations
 func DefaultToken() string {
 	for _, key := range []string{"HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"} {
 		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
@@ -33,14 +37,19 @@ func tokenFileCandidates() []string {
 		home = ""
 	}
 	var out []string
+	if home != "" {
+		// Canonical lazy-notes path first — brew services set HF_HOME and must
+		// not steal precedence from the user's ~/.config/lazy-notes/hf_token.
+		out = append(out, filepath.Join(home, ".config", "lazy-notes", "hf_token"))
+	}
 	if hfHome := strings.TrimSpace(os.Getenv("HF_HOME")); hfHome != "" {
 		out = append(out, filepath.Join(hfHome, "token"))
 	}
 	if home != "" {
 		out = append(out,
-			filepath.Join(home, ".config", "lazy-notes", "hf_token"),
-			filepath.Join(home, ".config", "cache", "huggingface", "token"),
+			filepath.Join(home, ".config", "huggingface", "token"),
 			filepath.Join(home, ".cache", "huggingface", "token"),
+			filepath.Join(home, ".config", "cache", "huggingface", "token"),
 			filepath.Join(home, ".huggingface", "token"),
 		)
 	}

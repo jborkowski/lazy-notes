@@ -54,9 +54,12 @@ class LazyNotes < Formula
     process_type :background
     log_path var/"log/lazy-notes.log"
     error_log_path var/"log/lazy-notes.err.log"
-    environment_variables LAZY_NOTES_DATA_DIR: opt_pkgshare/"config",
+    # launchd has a minimal PATH; duckdb/ffmpeg/memo/hf live under Homebrew.
+    # HF_TOKEN_PATH points at the canonical lazy-notes token file (not HF_HOME).
+    environment_variables PATH: std_service_path_env,
+                          LAZY_NOTES_DATA_DIR: opt_pkgshare/"config",
                           HOME: Dir.home,
-                          HF_HOME: "#{Dir.home}/.config/cache/huggingface"
+                          HF_TOKEN_PATH: "#{Dir.home}/.config/lazy-notes/hf_token"
   end
 
   def caveats
@@ -82,7 +85,9 @@ class LazyNotes < Formula
         brew services stop  jborkowski/lazy-notes/lazy-notes
         make start|stop|restart|logs|status
 
-      HF token (private dataset): hf auth login  or  HF_TOKEN
+      HF token (private dataset), in order:
+        ~/.config/lazy-notes/hf_token
+        HF_TOKEN / hf auth login
 
       lazy-notes setup && make start
     EOS
