@@ -5,23 +5,33 @@ TAP     := jborkowski/lazy-notes
 FORMULA := $(TAP)/lazy-notes
 export HOMEBREW_NO_AUTO_UPDATE ?= 1
 
-.PHONY: all help deps tap pack install setup start stop restart status sync logs uninstall
+.PHONY: all help deps tap pack install setup start stop restart status sync logs uninstall jscpd test
 
 all: install
 
 help:
-	@echo "make deps       brew tap/install memo + hf go duckdb ffmpeg"
+	@echo "make deps       brew tap/install memo + gogcli + hf go duckdb ffmpeg"
 	@echo "make install    pack sources into tap + brew install"
-	@echo "make setup      lazy-notes setup"
+	@echo "make setup      lazy-notes onboard (step-by-step + doctor)"
 	@echo "make start|stop|restart"
 	@echo "make status|sync|logs"
+	@echo "make test       go test ./..."
+	@echo "make jscpd      copy/paste detector (npx jscpd)"
 	@echo "make uninstall"
 
-# If `brew install lazy-notes` fails to resolve memo (tap-prefixed depends_on),
-# run `make deps` first — it taps antoniorodr/memo and installs memo explicitly.
+test:
+	go test ./...
+
+jscpd:
+	npx --yes jscpd . --config .jscpd.json
+
+# If `brew install lazy-notes` fails to resolve memo/gogcli (tap-prefixed depends_on),
+# run `make deps` first — it taps those formulas and installs them explicitly.
 deps:
 	$(BREW) tap antoniorodr/memo
 	$(BREW) install antoniorodr/memo/memo
+	$(BREW) tap openclaw/tap
+	$(BREW) install openclaw/tap/gogcli
 	$(BREW) install hf go duckdb ffmpeg
 	@if ! $(BREW) list --cask superwhisper >/dev/null 2>&1 && [ ! -d /Applications/superwhisper.app ]; then \
 		$(BREW) install --cask superwhisper; \
@@ -57,7 +67,7 @@ install: deps pack
 	fi
 
 setup: install
-	lazy-notes setup
+	lazy-notes onboard
 
 start:
 	$(BREW) services start $(FORMULA)

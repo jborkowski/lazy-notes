@@ -26,6 +26,7 @@ class LazyNotes < Formula
   depends_on "ffmpeg"
   depends_on "hf" # Hugging Face CLI (`hf auth login`)
   depends_on "antoniorodr/memo/memo"
+  depends_on "openclaw/tap/gogcli" # Google Drive via `gog` CLI
 
   # Official SuperWhisper CLI (history / export / search)
   resource "superwhisper-cli" do
@@ -54,7 +55,7 @@ class LazyNotes < Formula
     process_type :background
     log_path var/"log/lazy-notes.log"
     error_log_path var/"log/lazy-notes.err.log"
-    # launchd has a minimal PATH; duckdb/ffmpeg/memo/hf live under Homebrew.
+    # launchd has a minimal PATH; duckdb/ffmpeg/memo/hf/gog live under Homebrew.
     # HF_TOKEN_PATH points at the canonical lazy-notes token file (not HF_HOME).
     environment_variables PATH: std_service_path_env,
                           LAZY_NOTES_DATA_DIR: opt_pkgshare/"config",
@@ -71,6 +72,7 @@ class LazyNotes < Formula
       Runtime dependencies:
         hf               — Hugging Face CLI (auth / hub)
         memo             — Apple Notes publisher (antoniorodr/memo)
+        gog              — Google Workspace CLI (Drive upload / watch)
 
       Also required (Makefile installs via cask if missing):
         superwhisper.app — brew install --cask superwhisper
@@ -78,7 +80,17 @@ class LazyNotes < Formula
       Where output goes:
         Harvested notes → publish.notes_dir (see config.toml)
         Apple Notes     → memo folder publish.memo_folder (default Lazy Notes)
+        Google Drive    → publish.drive_folder_id when publish.drive_enabled
         Tag             → publish.tag (default #lazy-notes)
+
+      Optional watchers (config [watch]):
+        Apple Notes SQLite → watch.apple_notes_enabled
+        Drive local dir    → watch.drive_local_dir
+        Drive folder (gog) → watch.drive_folder_id
+
+      Google Drive auth (once):
+        gog auth credentials set ~/Downloads/client_secret_….json
+        gog auth add you@example.com --services drive
 
       Service:
         brew services start jborkowski/lazy-notes/lazy-notes
@@ -89,7 +101,8 @@ class LazyNotes < Formula
         ~/.config/lazy-notes/hf_token
         HF_TOKEN / hf auth login
 
-      lazy-notes setup && make start
+      lazy-notes onboard && make start
+      lazy-notes doctor
     EOS
   end
 
@@ -97,5 +110,6 @@ class LazyNotes < Formula
     assert_match "lazy-notes", shell_output("#{bin}/lazy-notes --help")
     assert_match "superwhisper", shell_output("#{bin}/superwhisper --help")
     assert_predicate Formula["hf"].opt_bin/"hf", :exist?
+    assert_predicate Formula["gogcli"].opt_bin/"gog", :exist?
   end
 end

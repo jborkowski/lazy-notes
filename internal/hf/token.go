@@ -86,6 +86,31 @@ func readTokenFile(path string) string {
 	return ""
 }
 
+// ResolveToken returns DefaultToken, or the contents of hfTokenFile when set.
+func ResolveToken(hfTokenFile string) string {
+	if t := DefaultToken(); t != "" {
+		return t
+	}
+	if hfTokenFile == "" {
+		return ""
+	}
+	return readTokenFile(expandHome(hfTokenFile))
+}
+
+func expandHome(p string) string {
+	if strings.HasPrefix(p, "~/") || p == "~" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return p
+		}
+		if p == "~" {
+			return home
+		}
+		return filepath.Join(home, p[2:])
+	}
+	return p
+}
+
 // TokenSource describes where DefaultToken found a credential (never the secret).
 func TokenSource() string {
 	for _, key := range []string{"HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"} {

@@ -46,3 +46,20 @@ memo_enabled = true
 memo_folder = "Lazy Notes"
 memo_bin = "memo"
 tag = "#lazy-notes"
+# Upload published markdown to Google Drive (requires: brew install gogcli && gog auth add … --services drive)
+drive_enabled = false
+drive_folder_id = ""
+gog_bin = "gog"
+# gog_account = "you@example.com"
+
+[watch]
+# Coalesce NoteStore / Drive bursts before triggering a sync pass.
+debounce_ms = 1500
+# Filesystem watch of Apple Notes SQLite (macOS). Triggers daemon sync on change.
+apple_notes_enabled = false
+apple_notes_db = "~/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite"
+# Watch a local Google Drive desktop folder and/or poll a Drive folder via gog-cli.
+drive_enabled = false
+drive_local_dir = ""
+drive_folder_id = ""
+drive_poll_interval_seconds = 60

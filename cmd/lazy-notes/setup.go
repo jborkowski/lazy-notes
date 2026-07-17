@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/jborkowski/lazy-notes/internal/config"
 	"github.com/jborkowski/lazy-notes/internal/hf"
@@ -17,7 +16,9 @@ var setupForce bool
 var setupCmd = &cobra.Command{
 	Use:   "setup",
 	Short: "Install config, SuperWhisper CLI, and Note modes",
-	Long:  "Ensure example config, SuperWhisper CLI, and language-specific SuperWhisper modes are installed.",
+	Long: `Ensure example config, SuperWhisper CLI, and language-specific SuperWhisper modes are installed.
+
+For a guided first-run checklist with doctor at the end, prefer: lazy-notes onboard`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		configPath := paths.ConfigPath()
@@ -41,24 +42,9 @@ var setupCmd = &cobra.Command{
 		if err != nil {
 			return exitErr(fmt.Errorf("install modes: %w", err))
 		}
-		if len(installed) > 0 {
-			fmt.Fprintf(os.Stdout, "Installed modes: %v\n", installed)
-		} else {
-			fmt.Fprintln(os.Stdout, "Modes already installed (use --force to overwrite)")
-		}
+		printModesInstalled(installed)
 
-		token := hf.DefaultToken()
-		if token == "" && cfg.HfTokenFile != "" {
-			path := cfg.HfTokenFile
-			if strings.HasPrefix(path, "~/") {
-				if home, err := os.UserHomeDir(); err == nil {
-					path = home + path[1:]
-				}
-			}
-			if b, err := os.ReadFile(path); err == nil {
-				token = strings.TrimSpace(string(b))
-			}
-		}
+		token := hf.ResolveToken(cfg.HfTokenFile)
 		client := hf.NewClient(cfg.Dataset, token, paths.CacheDir()+"/hf")
 		if src := hf.TokenSource(); src != "" {
 			fmt.Fprintf(os.Stdout, "HF token: %s\n", src)
@@ -76,12 +62,12 @@ var setupCmd = &cobra.Command{
 
 		fmt.Fprintln(os.Stdout)
 		fmt.Fprintln(os.Stdout, "Next steps:")
-		fmt.Fprintf(os.Stdout, "  1. Edit %s (publish.notes_dir, memo settings)\n", configPath)
-		fmt.Fprintf(os.Stdout, "  2. Notes go to %s and Apple Notes via memo (folder: %q)\n",
+		fmt.Fprintln(os.Stdout, "  lazy-notes onboard   # step-by-step checklist + doctor")
+		fmt.Fprintln(os.Stdout, "  lazy-notes doctor    # re-check deps / auth / watchers")
+		fmt.Fprintf(os.Stdout, "  Edit %s (publish / Drive / watch)\n", configPath)
+		fmt.Fprintf(os.Stdout, "  Notes → %s + Apple Notes folder %q\n",
 			cfg.NotesDir(), cfg.Publish.MemoFolder)
-		fmt.Fprintln(os.Stdout, "  3. make sync    # pull new clips from Hugging Face")
-		fmt.Fprintln(os.Stdout, "  4. lazy-notes publish   # harvest SuperWhisper output + push notes")
-		fmt.Fprintln(os.Stdout, "  5. make start   # daemon: sync + publish on interval")
+		fmt.Fprintln(os.Stdout, "  make sync && make start")
 
 		return nil
 	},

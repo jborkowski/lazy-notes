@@ -4,17 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/jborkowski/lazy-notes/internal/paths"
 )
 
 func expandPath(p string) string {
-	if len(p) > 0 && p[0] == '~' {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return p
-		}
-		return filepath.Join(home, p[1:])
-	}
-	return p
+	return paths.Expand(p)
 }
 
 func (m ModesConfig) forLang(lang string) string {
@@ -113,6 +108,24 @@ func (c *Config) NotesDir() string {
 // MemoBin returns the memo CLI binary name or path.
 func (c *Config) MemoBin() string {
 	return c.Publish.MemoBin
+}
+
+// GogBin returns the gog CLI binary name or path.
+func (c *Config) GogBin() string {
+	if c.Publish.GogBin != "" {
+		return c.Publish.GogBin
+	}
+	return "gog"
+}
+
+// AppleNotesDB returns the expanded Apple Notes NoteStore.sqlite path.
+func (c *Config) AppleNotesDB() string {
+	return expandPath(c.Watch.AppleNotesDB)
+}
+
+// DriveLocalDir returns the expanded local Google Drive sync directory, if set.
+func (c *Config) DriveLocalDir() string {
+	return expandPath(c.Watch.DriveLocalDir)
 }
 
 // ResolvePrompt returns prompt markdown for lang from inline Text or a file under configDir.

@@ -28,6 +28,7 @@ type Config struct {
 	Model       ModelConfig   `toml:"model"`
 	Prompts     PromptsConfig `toml:"prompts"`
 	Publish     PublishConfig `toml:"publish"`
+	Watch       WatchConfig   `toml:"watch"`
 }
 
 // SyncConfig controls background sync timing and filters.
@@ -84,7 +85,7 @@ type PromptSpec struct {
 	Text string `toml:"text,omitempty"`
 }
 
-// PublishConfig controls post-processing and Apple Notes export.
+// PublishConfig controls post-processing and Apple Notes / Drive export.
 type PublishConfig struct {
 	Enabled     bool   `toml:"enabled"`
 	NotesDir    string `toml:"notes_dir"`
@@ -93,6 +94,27 @@ type PublishConfig struct {
 	MemoBin     string `toml:"memo_bin"`
 	// Tag is appended to note bodies (e.g. "#lazy-notes") for search.
 	Tag string `toml:"tag"`
+	// DriveEnabled uploads each published markdown note to Google Drive via gog-cli.
+	DriveEnabled  bool   `toml:"drive_enabled"`
+	DriveFolderID string `toml:"drive_folder_id"`
+	GogBin        string `toml:"gog_bin"`
+	GogAccount    string `toml:"gog_account"`
+}
+
+// WatchConfig enables reactive daemon triggers beyond the sync interval.
+type WatchConfig struct {
+	// DebounceMs coalesces bursts of filesystem / Drive events (default 1500).
+	DebounceMs int `toml:"debounce_ms"`
+
+	// Apple Notes NoteStore.sqlite filesystem watch (macOS Group Container).
+	AppleNotesEnabled bool   `toml:"apple_notes_enabled"`
+	AppleNotesDB      string `toml:"apple_notes_db"`
+
+	// Google Drive: local synced directory (fsnotify) and/or folder via gog-cli poll.
+	DriveEnabled          bool   `toml:"drive_enabled"`
+	DriveLocalDir         string `toml:"drive_local_dir"`
+	DriveFolderID         string `toml:"drive_folder_id"`
+	DrivePollIntervalSecs int    `toml:"drive_poll_interval_seconds"`
 }
 
 // Defaults returns the shipped default configuration.
@@ -141,6 +163,12 @@ func Defaults() Config {
 			MemoFolder:  "Lazy Notes",
 			MemoBin:     "memo",
 			Tag:         "#lazy-notes",
+			GogBin:      "gog",
+		},
+		Watch: WatchConfig{
+			DebounceMs:            1500,
+			AppleNotesDB:          "~/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite",
+			DrivePollIntervalSecs: 60,
 		},
 	}
 }
@@ -232,6 +260,18 @@ func (c *Config) applyMissingDefaults() {
 	}
 	if c.Publish.Tag == "" {
 		c.Publish.Tag = def.Publish.Tag
+	}
+	if c.Publish.GogBin == "" {
+		c.Publish.GogBin = def.Publish.GogBin
+	}
+	if c.Watch.DebounceMs == 0 {
+		c.Watch.DebounceMs = def.Watch.DebounceMs
+	}
+	if c.Watch.AppleNotesDB == "" {
+		c.Watch.AppleNotesDB = def.Watch.AppleNotesDB
+	}
+	if c.Watch.DrivePollIntervalSecs == 0 {
+		c.Watch.DrivePollIntervalSecs = def.Watch.DrivePollIntervalSecs
 	}
 }
 

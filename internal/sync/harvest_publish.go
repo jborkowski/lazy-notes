@@ -25,6 +25,14 @@ type harvestTarget struct {
 	SubmittedAt time.Time
 }
 
+// ProcessHarvestPublish harvests submitted recordings and publishes the backlog.
+// It is used by sync passes and by `lazy-notes publish`.
+func ProcessHarvestPublish(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, error) {
+	result := &Result{}
+	processHarvestPublishBacklog(ctx, cfg, database, result)
+	return result, nil
+}
+
 func processHarvestPublishBacklog(ctx context.Context, cfg *config.Config, database *db.DB, result *Result) {
 	if !cfg.Publish.Enabled {
 		return
@@ -117,14 +125,7 @@ func publishHarvested(ctx context.Context, cfg *config.Config, database *db.DB, 
 		Tag:         cfg.Publish.Tag,
 	}
 
-	notePath, err := publish.Publish(
-		ctx,
-		cfg.Publish.NotesDir,
-		cfg.Publish.MemoBin,
-		cfg.Publish.MemoFolder,
-		cfg.Publish.MemoEnabled,
-		note,
-	)
+	notePath, err := publish.Publish(ctx, publish.OptionsFromConfig(cfg), note)
 	if err != nil {
 		slog.Error("publish failed", "recording_id", rec.RecordingID, "err", err)
 		result.Errors++
