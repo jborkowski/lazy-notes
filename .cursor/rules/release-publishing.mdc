@@ -1,0 +1,47 @@
+---
+description: Legit install on Solmigo and GitHub release publishing
+alwaysApply: true
+---
+
+# Release & install (Solmigo)
+
+## Install (only legit path)
+
+On Solmigo, install via Make → Homebrew. Do **not** copy `bin/lazy-notes` into PATH by hand.
+
+```bash
+cd /Users/jonatan/sources/lazy-notes
+make install          # deps + pack local tap + brew install --build-from-source
+lazy-notes doctor
+make start            # brew services
+```
+
+- Formula: `jborkowski/lazy-notes/lazy-notes`
+- Logs: `$(brew --prefix)/var/log/lazy-notes.{log,err.log}`
+- Daemon HF token: `~/.config/lazy-notes/hf_token` (not only `hf auth login`)
+
+## Version bump + tag
+
+1. Land features on `main` first.
+2. `release: bump to vX.Y.Z` — update `Formula/lazy-notes.rb` `version` and git `tag:`.
+3. Tag that commit: `git tag -a vX.Y.Z -m "release: vX.Y.Z"`.
+4. Build + upload macOS archives to the GitHub release (at least `darwin-arm64` for Solmigo).
+5. `chore: pin Formula git revision to vX.Y.Z` with the tagged commit SHA.
+
+## Release artifact layout (darwin-arm64)
+
+```
+lazy-notes-vX.Y.Z-darwin-arm64/
+  lazy-notes
+  README.md
+  config/
+checksums.txt   # sha256 of tarballs
+```
+
+Build:
+
+```bash
+GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/.../lazy-notes ./cmd/lazy-notes
+```
+
+Upload with `gh release create` / `gh release upload`. Prefer matching prior asset names.
