@@ -7,6 +7,17 @@ import (
 	"testing"
 )
 
+func TestWriteMarkdownVoiceMemoNegativeID(t *testing.T) {
+	dir := t.TempDir()
+	path, err := WriteMarkdown(dir, Note{RecordingID: -3, Title: "Memo Title", Body: "body"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Base(path) != "vm3-memo-title.md" {
+		t.Fatalf("filename = %q, want vm3-memo-title.md", filepath.Base(path))
+	}
+}
+
 func TestWriteMarkdown(t *testing.T) {
 	dir := t.TempDir()
 	n := Note{
@@ -69,6 +80,11 @@ func TestResolveTitle(t *testing.T) {
 			name: "fallback id",
 			n:    Note{RecordingID: 7},
 			want: "Voice note 7",
+		},
+		{
+			name: "fallback negative voice memo id",
+			n:    Note{RecordingID: -2},
+			want: "Voice memo 2",
 		},
 	}
 

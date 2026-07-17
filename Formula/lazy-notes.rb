@@ -83,8 +83,13 @@ class LazyNotes < Formula
         Google Drive    → publish.drive_folder_id when publish.drive_enabled
         Tag             → publish.tag (default #lazy-notes)
 
-      Optional watchers (config [watch]):
-        Apple Notes SQLite → watch.apple_notes_enabled
+      Inputs:
+        Hugging Face dataset (default)
+        Voice Memos.app via [voice_memos] export inbox (not NoteStore)
+
+      Optional wake watchers:
+        Voice Memos inbox  → voice_memos.enabled + watch_enabled
+        Apple Notes SQLite → watch.apple_notes_enabled (wake only)
         Drive local dir    → watch.drive_local_dir
         Drive folder (gog) → watch.drive_folder_id
 

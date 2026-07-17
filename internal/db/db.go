@@ -67,10 +67,22 @@ func (d *DB) migrate() error {
 		{"note_path", "TEXT"},
 		{"published_at", "TEXT"},
 		{"body", "TEXT"},
+		{"source", "TEXT"},
+		{"external_id", "TEXT"},
 	} {
 		if err := d.addColumnIfNotExists("recordings", col.name, col.typ); err != nil {
 			return fmt.Errorf("migrate recordings column %s: %w", col.name, err)
 		}
+	}
+	// Existing rows are HF ingest.
+	if _, err := d.sql.Exec(`UPDATE recordings SET source = ? WHERE source IS NULL OR source = ''`, SourceHF); err != nil {
+		return fmt.Errorf("backfill source: %w", err)
+	}
+	if _, err := d.sql.Exec(`
+CREATE UNIQUE INDEX IF NOT EXISTS recordings_source_external_id
+ON recordings(source, external_id)
+WHERE external_id IS NOT NULL AND external_id != ''`); err != nil {
+		return fmt.Errorf("migrate external_id index: %w", err)
 	}
 	if _, err := d.sql.Exec(schemaMeta); err != nil {
 		return fmt.Errorf("migrate meta: %w", err)

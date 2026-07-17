@@ -26,6 +26,9 @@ func ResolveTitle(n Note) string {
 	if t := firstLine(n.Body); t != "" {
 		return t
 	}
+	if n.RecordingID < 0 {
+		return fmt.Sprintf("Voice memo %d", -n.RecordingID)
+	}
 	return fmt.Sprintf("Voice note %d", n.RecordingID)
 }
 

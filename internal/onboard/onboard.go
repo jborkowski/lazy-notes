@@ -130,13 +130,26 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 		fmt.Fprintln(out, "    tip: set publish.drive_enabled + drive_folder_id to upload via gog")
 	}
 
-	// 7. Watchers
-	next("Optional watchers")
-	fmt.Fprintf(out, "    apple_notes_enabled: %v\n", cfg.Watch.AppleNotesEnabled)
+	// 7. Voice Memos inbox + optional wake watchers
+	next("Voice Memos inbox and optional wake watchers")
+	fmt.Fprintf(out, "    voice_memos.enabled: %v  export_dir=%q\n",
+		cfg.VoiceMemos.Enabled, cfg.VoiceMemosExportDir())
+	fmt.Fprintln(out, "    HF dataset + Voice Memos export inbox → SuperWhisper → notes")
+	fmt.Fprintln(out, "    NoteStore / Drive watch = sync wake only (not Voice Memos ingest)")
+	if cfg.VoiceMemos.Enabled {
+		if err := paths.EnsureDir(cfg.VoiceMemosExportDir()); err != nil {
+			fmt.Fprintf(errOut, "    warn: could not create inbox: %v\n", err)
+		} else {
+			fmt.Fprintf(out, "    drop finished .m4a files into: %s\n", cfg.VoiceMemosExportDir())
+		}
+	} else {
+		fmt.Fprintln(out, "    tip: set voice_memos.enabled = true to ingest Voice Memos.app exports")
+	}
+	fmt.Fprintf(out, "    apple_notes_enabled: %v  (NoteStore wake, not Voice Memos)\n", cfg.Watch.AppleNotesEnabled)
 	fmt.Fprintf(out, "    drive watch:         %v  local=%q folder_id=%q\n",
 		cfg.Watch.DriveEnabled, cfg.Watch.DriveLocalDir, cfg.Watch.DriveFolderID)
-	if !cfg.Watch.AppleNotesEnabled && !cfg.Watch.DriveEnabled {
-		fmt.Fprintln(out, "    tip: enable watch.apple_notes_enabled and/or watch.drive_* for reactive sync")
+	if !cfg.Watch.AppleNotesEnabled && !cfg.Watch.DriveEnabled && !cfg.VoiceMemos.Enabled {
+		fmt.Fprintln(out, "    tip: enable voice_memos and/or watch.* for reactive sync")
 	}
 
 	// 8. Doctor

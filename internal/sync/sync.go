@@ -33,8 +33,8 @@ type metaJob struct {
 	parquet string
 }
 
-// Run performs one lazy incremental sync: only recordings newer than the
-// watermark, newest shards first, optional caps, delete audio/shards after use.
+// Run performs one sync pass: Hugging Face (best-effort), Voice Memos inbox, then
+// harvest/publish backlog. HF VerifyAccess failures do not block Voice Memos or backlog.
 func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is nil")
@@ -44,18 +44,45 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 	}
 
 	result := &Result{}
+
+	if err := runHF(ctx, cfg, database, result); err != nil {
+		slog.Error("hf sync pass failed", "err", err)
+		result.Errors++
+	}
+
+	if err := RunVoiceMemos(ctx, cfg, database, result); err != nil {
+		slog.Error("voice memos sync pass failed", "err", err)
+		result.Errors++
+	}
+
+	processHarvestPublishBacklog(ctx, cfg, database, result)
+
+	slog.Info("sync pass finished",
+		"scanned", result.Scanned,
+		"submitted", result.Submitted,
+		"harvested", result.Harvested,
+		"published", result.Published,
+		"skipped", result.Skipped,
+		"errors", result.Errors,
+		"watermark", result.Watermark,
+	)
+
+	return result, nil
+}
+
+func runHF(ctx context.Context, cfg *config.Config, database *db.DB, result *Result) error {
 	preferOriginal := cfg.AudioPrefer == "original"
 	minDuration := cfg.Sync.MinDurationSeconds
 	submitDelay := time.Duration(cfg.Sync.SubmitDelaySeconds * float64(time.Second))
 
 	client := hf.NewClient(cfg.Dataset, tokenFromConfig(cfg), filepath.Join(paths.CacheDir(), "hf"))
 	if err := client.VerifyAccess(ctx); err != nil {
-		return nil, err
+		return err
 	}
 
 	watermark, err := database.EffectiveWatermark()
 	if err != nil {
-		return nil, fmt.Errorf("watermark: %w", err)
+		return fmt.Errorf("watermark: %w", err)
 	}
 	result.Watermark = watermark
 
@@ -63,36 +90,36 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 	if watermark == 0 && cfg.Sync.LazyStart {
 		latest, err := bootstrapLatest(ctx, client, cfg.Sync.KeepShards)
 		if err != nil {
-			return nil, fmt.Errorf("lazy start: %w", err)
+			return fmt.Errorf("lazy start: %w", err)
 		}
 		if err := database.AdvanceWatermark(latest); err != nil {
-			return nil, err
+			return err
 		}
 		result.Watermark = latest
 		slog.Info("lazy start: watermark set to latest, no backfill", "watermark", latest)
-		return result, nil
+		return nil
 	}
 
 	known, err := database.KnownIDs()
 	if err != nil {
-		return nil, fmt.Errorf("known ids: %w", err)
+		return fmt.Errorf("known ids: %w", err)
 	}
 
 	jobs, skipped, maxSeen, err := listNewMetas(ctx, client, minDuration, watermark, known, preferOriginal, cfg.Sync.KeepShards, cfg.Sync.MaxPerSync)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	result.Skipped = skipped
+	result.Skipped += skipped
 
 	if err := paths.EnsureDir(paths.AudioCacheDir()); err != nil {
-		return nil, fmt.Errorf("ensure audio cache: %w", err)
+		return fmt.Errorf("ensure audio cache: %w", err)
 	}
 
 	fallback := fallbackLang(cfg)
 
 	for _, job := range jobs {
 		if err := ctx.Err(); err != nil {
-			return result, err
+			return err
 		}
 
 		result.Scanned++
@@ -106,6 +133,7 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 
 		rec := db.Recording{
 			RecordingID: meta.RecordingID,
+			Source:      db.SourceHF,
 			CreatedAt:   meta.CreatedAt,
 			Title:       meta.Title,
 			AudioPath:   audioPath,
@@ -178,20 +206,7 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 	if !cfg.Sync.KeepShards {
 		cleanupParquets(jobs)
 	}
-
-	processHarvestPublishBacklog(ctx, cfg, database, result)
-
-	slog.Info("sync pass finished",
-		"scanned", result.Scanned,
-		"submitted", result.Submitted,
-		"harvested", result.Harvested,
-		"published", result.Published,
-		"skipped", result.Skipped,
-		"errors", result.Errors,
-		"watermark", result.Watermark,
-	)
-
-	return result, nil
+	return nil
 }
 
 func bootstrapLatest(ctx context.Context, client *hf.Client, keepShard bool) (int64, error) {
