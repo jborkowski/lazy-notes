@@ -34,7 +34,7 @@ func PushMemo(ctx context.Context, memoBin, folder string, n Note) error {
 	}
 
 	title := ResolveTitle(n)
-	markdown := buildMemoMarkdown(title, n.Body)
+	markdown := buildMemoMarkdown(title, n.Body, n.Tag)
 
 	editorPath, cleanup, err := writeMemoEditorScript()
 	if err != nil {
@@ -54,9 +54,9 @@ func PushMemo(ctx context.Context, memoBin, folder string, n Note) error {
 	return nil
 }
 
-func buildMemoMarkdown(title, body string) string {
+func buildMemoMarkdown(title, body, tag string) string {
 	title = strings.TrimSpace(title)
-	body = strings.TrimSpace(body)
+	body = strings.TrimSpace(withTag(body, tag))
 	if body == "" {
 		return "# " + title + "\n"
 	}

@@ -15,6 +15,7 @@ func TestWriteMarkdown(t *testing.T) {
 		Language:    "en",
 		ModeKey:     "lazy-note-en",
 		SourceSW:    "sw-abc",
+		Tag:         "#lazy-notes",
 	}
 
 	path, err := WriteMarkdown(dir, n)
@@ -37,8 +38,10 @@ func TestWriteMarkdown(t *testing.T) {
 		`language: "en"`,
 		`mode: "lazy-note-en"`,
 		`sw_id: "sw-abc"`,
+		`tags: ["lazy-notes"]`,
 		"created:",
 		"Body paragraph.",
+		"#lazy-notes",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in:\n%s", want, text)

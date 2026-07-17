@@ -114,6 +114,7 @@ func publishHarvested(ctx context.Context, cfg *config.Config, database *db.DB, 
 		Language:    rec.Language,
 		ModeKey:     rec.ModeKey,
 		SourceSW:    rec.SwID,
+		Tag:         cfg.Publish.Tag,
 	}
 
 	notePath, err := publish.Publish(

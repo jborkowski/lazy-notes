@@ -136,6 +136,7 @@ func publishRecording(ctx context.Context, cfg *config.Config, database *db.DB, 
 			Language:    rec.Language,
 			ModeKey:     rec.ModeKey,
 			SourceSW:    rec.SwID,
+			Tag:         cfg.Publish.Tag,
 		},
 	)
 	if err != nil {

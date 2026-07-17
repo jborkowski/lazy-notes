@@ -43,3 +43,4 @@ notes_dir = "~/.local/share/lazy-notes/notes"
 memo_enabled = true
 memo_folder = "Lazy Notes"
 memo_bin = "memo"
+tag = "#lazy-notes"

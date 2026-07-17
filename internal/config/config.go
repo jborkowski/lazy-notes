@@ -91,6 +91,8 @@ type PublishConfig struct {
 	MemoEnabled bool   `toml:"memo_enabled"`
 	MemoFolder  string `toml:"memo_folder"`
 	MemoBin     string `toml:"memo_bin"`
+	// Tag is appended to note bodies (e.g. "#lazy-notes") for search.
+	Tag string `toml:"tag"`
 }
 
 // Defaults returns the shipped default configuration.
@@ -138,6 +140,7 @@ func Defaults() Config {
 			MemoEnabled: true,
 			MemoFolder:  "Lazy Notes",
 			MemoBin:     "memo",
+			Tag:         "#lazy-notes",
 		},
 	}
 }
@@ -226,6 +229,9 @@ func (c *Config) applyMissingDefaults() {
 	}
 	if c.Publish.MemoBin == "" {
 		c.Publish.MemoBin = def.Publish.MemoBin
+	}
+	if c.Publish.Tag == "" {
+		c.Publish.Tag = def.Publish.Tag
 	}
 }
 

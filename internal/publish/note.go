@@ -13,6 +13,9 @@ type Note struct {
 	Language    string
 	ModeKey     string
 	SourceSW    string
+	// Tag is appended to the note body (e.g. "#lazy-notes") for search in
+	// markdown files and Apple Notes.
+	Tag string
 }
 
 // ResolveTitle returns an explicit title or derives one from the note body.

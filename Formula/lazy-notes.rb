@@ -4,13 +4,22 @@ class LazyNotes < Formula
   version "0.1.0"
   license "MIT"
 
-  # `make install` packs this checkout into the local tap as lazy-notes-src.tar.gz
-  tapdir = Tap.fetch("jborkowski/lazy-notes").path
-  tarball = tapdir/"lazy-notes-src.tar.gz"
-  raise "Missing #{tarball}; run: make install" unless tarball.exist?
+  # Prefer a locally packed tarball from `make install`; otherwise build the
+  # tagged GitHub source (for `brew tap … https://github.com/jborkowski/lazy-notes`).
+  local_tarball = begin
+    Tap.fetch("jborkowski/lazy-notes").path/"lazy-notes-src.tar.gz"
+  rescue NameError, LoadError, StandardError
+    nil
+  end
 
-  url "file://#{tarball}"
-  sha256 tarball.sha256
+  if local_tarball&.exist?
+    url "file://#{local_tarball}"
+    sha256 local_tarball.sha256
+  else
+    # Checked out at the release tag. `revision` is filled on main after the
+    # tag exists (Formula lives in-repo; avoids a self-hash chicken-egg).
+    url "https://github.com/jborkowski/lazy-notes.git", tag: "v0.1.0"
+  end
 
   depends_on "go" => :build
   depends_on "duckdb"
@@ -59,18 +68,18 @@ class LazyNotes < Formula
         superwhisper.app — brew install --cask superwhisper
 
       Where output goes:
-        Transcripts land in SuperWhisper's DB:
-          ~/Library/Application Support/superwhisper/database/
-        Read them with:
-          superwhisper history --json
-          superwhisper export -f markdown
-        Harvested notes are written to publish.notes_dir (see config.toml).
-        memo (antoniorodr/memo/memo) pushes notes into Apple Notes when
-        publish.memo_enabled is set.
+        Harvested notes → publish.notes_dir (see config.toml)
+        Apple Notes     → memo folder publish.memo_folder (default Lazy Notes)
+        Tag             → publish.tag (default #lazy-notes)
+
+      Service:
+        brew services start jborkowski/lazy-notes/lazy-notes
+        brew services stop  jborkowski/lazy-notes/lazy-notes
+        make start|stop|restart|logs|status
 
       HF token (private dataset): hf auth login  or  HF_TOKEN
 
-      make setup && make start
+      lazy-notes setup && make start
     EOS
   end
 

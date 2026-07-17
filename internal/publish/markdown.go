@@ -45,9 +45,13 @@ func buildMarkdownFile(n Note, created time.Time) string {
 	if n.SourceSW != "" {
 		b.WriteString(fmt.Sprintf("sw_id: %q\n", n.SourceSW))
 	}
+	if tagName := tagWithoutHash(n.Tag); tagName != "" {
+		b.WriteString(fmt.Sprintf("tags: [%q]\n", tagName))
+	}
 	b.WriteString(fmt.Sprintf("created: %q\n", created.Format(time.RFC3339)))
 	b.WriteString("---\n")
-	if body := strings.TrimSpace(n.Body); body != "" {
+	body := withTag(n.Body, n.Tag)
+	if body = strings.TrimSpace(body); body != "" {
 		if !strings.HasSuffix(body, "\n") {
 			body += "\n"
 		}
