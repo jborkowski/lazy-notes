@@ -76,12 +76,14 @@ var setupCmd = &cobra.Command{
 
 		fmt.Fprintln(os.Stdout)
 		fmt.Fprintln(os.Stdout, "Next steps:")
-		fmt.Fprintf(os.Stdout, "  1. Edit %s (publish.notes_dir, memo settings)\n", configPath)
+		fmt.Fprintf(os.Stdout, "  1. Edit %s (publish.notes_dir, memo / Drive / watch settings)\n", configPath)
 		fmt.Fprintf(os.Stdout, "  2. Notes go to %s and Apple Notes via memo (folder: %q)\n",
 			cfg.NotesDir(), cfg.Publish.MemoFolder)
-		fmt.Fprintln(os.Stdout, "  3. make sync    # pull new clips from Hugging Face")
-		fmt.Fprintln(os.Stdout, "  4. lazy-notes publish   # harvest SuperWhisper output + push notes")
-		fmt.Fprintln(os.Stdout, "  5. make start   # daemon: sync + publish on interval")
+		fmt.Fprintln(os.Stdout, "  3. Optional Drive: set publish.drive_enabled + drive_folder_id; gog auth add … --services drive")
+		fmt.Fprintln(os.Stdout, "  4. Optional watchers: watch.apple_notes_enabled and/or watch.drive_*")
+		fmt.Fprintln(os.Stdout, "  5. make sync    # pull new clips from Hugging Face")
+		fmt.Fprintln(os.Stdout, "  6. lazy-notes publish   # harvest SuperWhisper output + push notes")
+		fmt.Fprintln(os.Stdout, "  7. make start   # daemon: sync + publish on interval (+ watchers)")
 
 		return nil
 	},

@@ -117,14 +117,16 @@ func publishHarvested(ctx context.Context, cfg *config.Config, database *db.DB, 
 		Tag:         cfg.Publish.Tag,
 	}
 
-	notePath, err := publish.Publish(
-		ctx,
-		cfg.Publish.NotesDir,
-		cfg.Publish.MemoBin,
-		cfg.Publish.MemoFolder,
-		cfg.Publish.MemoEnabled,
-		note,
-	)
+	notePath, err := publish.Publish(ctx, publish.Options{
+		NotesDir:      cfg.Publish.NotesDir,
+		MemoEnabled:   cfg.Publish.MemoEnabled,
+		MemoBin:       cfg.Publish.MemoBin,
+		MemoFolder:    cfg.Publish.MemoFolder,
+		DriveEnabled:  cfg.Publish.DriveEnabled,
+		DriveFolderID: cfg.Publish.DriveFolderID,
+		GogBin:        cfg.GogBin(),
+		GogAccount:    cfg.Publish.GogAccount,
+	}, note)
 	if err != nil {
 		slog.Error("publish failed", "recording_id", rec.RecordingID, "err", err)
 		result.Errors++

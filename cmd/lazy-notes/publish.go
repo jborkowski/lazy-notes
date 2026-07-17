@@ -21,7 +21,7 @@ const (
 var publishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Harvest SuperWhisper transcripts and publish notes",
-	Long:  "Processes the backlog: harvest text for submitted recordings, then publish harvested notes to notes_dir and Apple Notes via memo.",
+	Long:  "Processes the backlog: harvest text for submitted recordings, then publish harvested notes to notes_dir, Apple Notes via memo, and optionally Google Drive via gog.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := loadConfig()
 		if err != nil {
@@ -123,22 +123,24 @@ func harvestAndPublishRecording(ctx context.Context, cfg *config.Config, databas
 }
 
 func publishRecording(ctx context.Context, cfg *config.Config, database *db.DB, rec db.Recording, result *publishResult) {
-	notePath, err := lnpublish.Publish(
-		ctx,
-		cfg.NotesDir(),
-		cfg.MemoBin(),
-		cfg.Publish.MemoFolder,
-		cfg.Publish.MemoEnabled,
-		lnpublish.Note{
-			Title:       rec.Title,
-			Body:        rec.Body,
-			RecordingID: rec.RecordingID,
-			Language:    rec.Language,
-			ModeKey:     rec.ModeKey,
-			SourceSW:    rec.SwID,
-			Tag:         cfg.Publish.Tag,
-		},
-	)
+	notePath, err := lnpublish.Publish(ctx, lnpublish.Options{
+		NotesDir:      cfg.NotesDir(),
+		MemoEnabled:   cfg.Publish.MemoEnabled,
+		MemoBin:       cfg.MemoBin(),
+		MemoFolder:    cfg.Publish.MemoFolder,
+		DriveEnabled:  cfg.Publish.DriveEnabled,
+		DriveFolderID: cfg.Publish.DriveFolderID,
+		GogBin:        cfg.GogBin(),
+		GogAccount:    cfg.Publish.GogAccount,
+	}, lnpublish.Note{
+		Title:       rec.Title,
+		Body:        rec.Body,
+		RecordingID: rec.RecordingID,
+		Language:    rec.Language,
+		ModeKey:     rec.ModeKey,
+		SourceSW:    rec.SwID,
+		Tag:         cfg.Publish.Tag,
+	})
 	if err != nil {
 		result.Errors++
 		return

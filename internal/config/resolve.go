@@ -115,6 +115,24 @@ func (c *Config) MemoBin() string {
 	return c.Publish.MemoBin
 }
 
+// GogBin returns the gog CLI binary name or path.
+func (c *Config) GogBin() string {
+	if c.Publish.GogBin != "" {
+		return c.Publish.GogBin
+	}
+	return "gog"
+}
+
+// AppleNotesDB returns the expanded Apple Notes NoteStore.sqlite path.
+func (c *Config) AppleNotesDB() string {
+	return expandPath(c.Watch.AppleNotesDB)
+}
+
+// DriveLocalDir returns the expanded local Google Drive sync directory, if set.
+func (c *Config) DriveLocalDir() string {
+	return expandPath(c.Watch.DriveLocalDir)
+}
+
 // ResolvePrompt returns prompt markdown for lang from inline Text or a file under configDir.
 func (c *Config) ResolvePrompt(lang string, configDir string) (string, error) {
 	spec, ok := c.Prompts.forLang(lang)
