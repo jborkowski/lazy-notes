@@ -24,6 +24,7 @@ class LazyNotes < Formula
   depends_on "go" => :build
   depends_on "duckdb"
   depends_on "ffmpeg"
+  depends_on "hf" # Hugging Face CLI (`hf auth login`)
   depends_on "antoniorodr/memo/memo"
 
   # Official SuperWhisper CLI (history / export / search)
@@ -64,6 +65,10 @@ class LazyNotes < Formula
         lazy-notes       — sync daemon
         superwhisper     — SuperWhisper CLI (history/export)
 
+      Runtime dependencies:
+        hf               — Hugging Face CLI (auth / hub)
+        memo             — Apple Notes publisher (antoniorodr/memo)
+
       Also required (Makefile installs via cask if missing):
         superwhisper.app — brew install --cask superwhisper
 
@@ -86,5 +91,6 @@ class LazyNotes < Formula
   test do
     assert_match "lazy-notes", shell_output("#{bin}/lazy-notes --help")
     assert_match "superwhisper", shell_output("#{bin}/superwhisper --help")
+    assert_predicate Formula["hf"].opt_bin/"hf", :exist?
   end
 end

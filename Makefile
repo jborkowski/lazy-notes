@@ -10,7 +10,7 @@ export HOMEBREW_NO_AUTO_UPDATE ?= 1
 all: install
 
 help:
-	@echo "make deps       brew tap/install memo + go duckdb ffmpeg"
+	@echo "make deps       brew tap/install memo + hf go duckdb ffmpeg"
 	@echo "make install    pack sources into tap + brew install"
 	@echo "make setup      lazy-notes setup"
 	@echo "make start|stop|restart"
@@ -22,7 +22,7 @@ help:
 deps:
 	$(BREW) tap antoniorodr/memo
 	$(BREW) install antoniorodr/memo/memo
-	$(BREW) install go duckdb ffmpeg
+	$(BREW) install hf go duckdb ffmpeg
 	@if ! $(BREW) list --cask superwhisper >/dev/null 2>&1 && [ ! -d /Applications/superwhisper.app ]; then \
 		$(BREW) install --cask superwhisper; \
 	else \

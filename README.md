@@ -21,6 +21,7 @@ make install && make setup && make start
 It also pulls in:
 
 - **memo** ([antoniorodr/memo](https://github.com/antoniorodr/memo)) — pushes notes into Apple Notes
+- **hf** ([Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli)) — `hf auth login` for private datasets
 - **SuperWhisper CLI** (`superwhisper`) — submits audio and exposes `history` for harvest
 - **go**, **duckdb**, **ffmpeg**, and the **SuperWhisper** macOS app (cask)
 
