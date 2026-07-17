@@ -16,9 +16,9 @@ class LazyNotes < Formula
     url "file://#{local_tarball}"
     sha256 local_tarball.sha256
   else
-    # Checked out at the release tag. `revision` is filled on main after the
-    # tag exists (Formula lives in-repo; avoids a self-hash chicken-egg).
-    url "https://github.com/jborkowski/lazy-notes.git", tag: "v0.1.0"
+    url "https://github.com/jborkowski/lazy-notes.git",
+        tag:      "v0.1.0",
+        revision: "2dd705e6cc1a5c2f7c24187b3194cc792041f51b"
   end
 
   depends_on "go" => :build
