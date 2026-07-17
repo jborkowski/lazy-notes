@@ -1,15 +1,33 @@
 # OS
 .DS_Store
 Thumbs.db
-node_modules/
-.env
-.env.local
-*.log
+
+# Editors
 .vscode/
 .idea/
-__pycache__/
-*.pyc
-*.pyo
 *.swp
 *.swo
 *~
+
+# Env / secrets
+.env
+.env.local
+*.log
+
+# Go
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+vendor/
+
+# Python leftovers (ignore if any)
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Local runtime
+.cache/
+*.sqlite
