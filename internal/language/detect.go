@@ -6,30 +6,33 @@ import (
 	"github.com/abadojack/whatlanggo"
 )
 
-// Text detection uses github.com/abadojack/whatlanggo (pure Go, trigram models).
-//
-// When text is empty and audioPath is set, audio language ID is not implemented yet.
-// TODO: probe audio metadata (afinfo) or run whisper LID on audioPath.
-
-// Detect returns pl, en, or es when possible, otherwise fallback.
-// allowed is normalized to supported codes; empty fallback defaults to en.
+// Detect returns "pl", "en", "es" when confident from text; otherwise "auto".
+// "auto" means: SuperWhisper mode with language=auto and the conditional prompt
+// (three <if=...> blocks). No external audio LID.
 func Detect(text string, audioPath string, allowed []string, fallback string) string {
+	_ = audioPath // SW auto mode handles unknown audio language
 	allowed = normalizeAllowedList(allowed)
-	fallback = effectiveFallback(fallback)
+	if fallback == "" {
+		fallback = Auto
+	}
 
 	if strings.TrimSpace(text) != "" {
 		if lang := detectFromText(text, allowed); lang != "" {
 			return lang
 		}
-		return fallback
 	}
-
-	if strings.TrimSpace(audioPath) != "" {
-		// Phase 1: no audio LID; whisper/afinfo can be wired here later.
-		_ = audioPath
+	if fallback == "en" || fallback == "pl" || fallback == "es" {
+		// Prefer explicit auto when unrecognized — caller maps via ModeKey("auto").
+		return Auto
 	}
-	return fallback
+	if Normalize(fallback) == Auto || fallback == Auto {
+		return Auto
+	}
+	return Auto
 }
+
+// Auto is the routing key for the SuperWhisper fallback mode (conditional prompt).
+const Auto = "auto"
 
 func detectFromText(text string, allowed []string) string {
 	whitelist := whatlangWhitelist(allowed)
@@ -44,15 +47,18 @@ func detectFromText(text string, allowed []string) string {
 			Blacklist: blacklist,
 		}
 		info := whatlanggo.DetectWithOptions(text, opts)
+		if !info.IsReliable() && info.Confidence < 0.5 {
+			// try next / give up
+		}
 		if info.Lang < 0 {
 			break
 		}
-
 		code := fromWhatlang(info.Lang)
 		if code != "" && InAllowed(code, allowed) {
-			return code
+			if info.IsReliable() || info.Confidence >= 0.45 {
+				return code
+			}
 		}
-
 		blacklist[info.Lang] = true
 	}
 	return ""
@@ -90,4 +96,9 @@ func fromWhatlang(lang whatlanggo.Lang) string {
 	default:
 		return Normalize(lang.Iso6391())
 	}
+}
+
+// FromSuperWhisper maps SW language labels to pl|en|es|"".
+func FromSuperWhisper(label string) string {
+	return Normalize(label)
 }

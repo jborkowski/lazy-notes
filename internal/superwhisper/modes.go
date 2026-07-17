@@ -26,9 +26,22 @@ func InstallModes(cfg *config.Config, configDir string, force bool) ([]string, e
 	}
 
 	var written []string
-	modeKeys := make([]string, 0, len(cfg.Languages))
+	langs := make([]string, 0, len(cfg.Languages)+1)
+	langs = append(langs, cfg.Languages...)
+	hasAuto := false
+	for _, l := range langs {
+		if l == "auto" {
+			hasAuto = true
+			break
+		}
+	}
+	if !hasAuto {
+		langs = append(langs, "auto")
+	}
 
-	for _, lang := range cfg.Languages {
+	modeKeys := make([]string, 0, len(langs))
+
+	for _, lang := range langs {
 		key := cfg.ModeKey(lang)
 		modeKeys = append(modeKeys, key)
 
@@ -46,10 +59,17 @@ func InstallModes(cfg *config.Config, configDir string, force bool) ([]string, e
 			}
 		}
 
+		swLang := lang
+		name := modeDisplayName(lang)
+		if lang == "auto" {
+			swLang = "auto"
+			name = "Lazy Note"
+		}
+
 		mode := config.BuildModeJSON(
 			key,
-			modeDisplayName(lang),
-			lang,
+			name,
+			swLang,
 			cfg.VoiceModel(lang),
 			cfg.LanguageModel(lang),
 			prompt,

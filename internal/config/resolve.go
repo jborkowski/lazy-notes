@@ -25,6 +25,8 @@ func (m ModesConfig) forLang(lang string) string {
 		return m.EN
 	case "es":
 		return m.ES
+	case "auto":
+		return m.Auto
 	default:
 		return ""
 	}
@@ -62,14 +64,27 @@ func (p PromptsConfig) forLang(lang string) (PromptSpec, bool) {
 		if p.ES.File != "" || p.ES.Text != "" {
 			return p.ES, true
 		}
+	case "auto":
+		if p.Auto.File != "" || p.Auto.Text != "" {
+			return p.Auto, true
+		}
 	}
 	return PromptSpec{}, false
 }
 
-// ModeKey returns the SuperWhisper mode key for lang, or the fallback key.
+// ModeKey returns the SuperWhisper mode key for lang, or the fallback (auto) key.
 func (c *Config) ModeKey(lang string) string {
+	if lang == "auto" {
+		if c.Modes.Auto != "" {
+			return c.Modes.Auto
+		}
+		return c.Modes.Fallback
+	}
 	if key := c.Modes.forLang(lang); key != "" {
 		return key
+	}
+	if c.Modes.Auto != "" {
+		return c.Modes.Auto
 	}
 	return c.Modes.Fallback
 }

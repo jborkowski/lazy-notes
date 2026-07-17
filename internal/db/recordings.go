@@ -17,6 +17,7 @@ type rowScanner interface {
 func scanRecording(s rowScanner) (Recording, error) {
 	var r Recording
 	var submittedAt, publishedAt sql.NullString
+	var swID, notePath, body sql.NullString
 	if err := s.Scan(
 		&r.RecordingID,
 		&r.CreatedAt,
@@ -27,15 +28,18 @@ func scanRecording(s rowScanner) (Recording, error) {
 		&r.Status,
 		&submittedAt,
 		&r.Error,
-		&r.SwID,
-		&r.NotePath,
+		&swID,
+		&notePath,
 		&publishedAt,
-		&r.Body,
+		&body,
 	); err != nil {
 		return Recording{}, err
 	}
 	r.SubmittedAt = parseRFC3339Ptr(submittedAt)
 	r.PublishedAt = parseRFC3339Ptr(publishedAt)
+	r.SwID = swID.String
+	r.NotePath = notePath.String
+	r.Body = body.String
 	return r, nil
 }
 

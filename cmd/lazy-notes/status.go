@@ -39,7 +39,13 @@ var statusCmd = &cobra.Command{
 }
 
 func printStatusCounts(counts map[db.Status]int) {
-	order := []db.Status{db.StatusPending, db.StatusSubmitted, db.StatusError}
+	order := []db.Status{
+		db.StatusPending,
+		db.StatusSubmitted,
+		db.StatusHarvested,
+		db.StatusPublished,
+		db.StatusError,
+	}
 	for _, status := range order {
 		fmt.Fprintf(os.Stdout, "%s: %d\n", status, counts[status])
 	}

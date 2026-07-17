@@ -15,6 +15,7 @@ class LazyNotes < Formula
   depends_on "go" => :build
   depends_on "duckdb"
   depends_on "ffmpeg"
+  depends_on "antoniorodr/memo/memo"
 
   # Official SuperWhisper CLI (history / export / search)
   resource "superwhisper-cli" do
@@ -63,7 +64,9 @@ class LazyNotes < Formula
         Read them with:
           superwhisper history --json
           superwhisper export -f markdown
-        lazy-notes does not harvest/publish yet (Phase 2).
+        Harvested notes are written to publish.notes_dir (see config.toml).
+        memo (antoniorodr/memo/memo) pushes notes into Apple Notes when
+        publish.memo_enabled is set.
 
       HF token (private dataset): hf auth login  or  HF_TOKEN
 

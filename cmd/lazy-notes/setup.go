@@ -76,9 +76,12 @@ var setupCmd = &cobra.Command{
 
 		fmt.Fprintln(os.Stdout)
 		fmt.Fprintln(os.Stdout, "Next steps:")
-		fmt.Fprintf(os.Stdout, "  1. Edit %s\n", configPath)
-		fmt.Fprintln(os.Stdout, "  2. make sync")
-		fmt.Fprintln(os.Stdout, "  3. make start")
+		fmt.Fprintf(os.Stdout, "  1. Edit %s (publish.notes_dir, memo settings)\n", configPath)
+		fmt.Fprintf(os.Stdout, "  2. Notes go to %s and Apple Notes via memo (folder: %q)\n",
+			cfg.NotesDir(), cfg.Publish.MemoFolder)
+		fmt.Fprintln(os.Stdout, "  3. make sync    # pull new clips from Hugging Face")
+		fmt.Fprintln(os.Stdout, "  4. lazy-notes publish   # harvest SuperWhisper output + push notes")
+		fmt.Fprintln(os.Stdout, "  5. make start   # daemon: sync + publish on interval")
 
 		return nil
 	},

@@ -51,6 +51,7 @@ type ModesConfig struct {
 	PL       string `toml:"pl"`
 	EN       string `toml:"en"`
 	ES       string `toml:"es"`
+	Auto     string `toml:"auto"`
 	Fallback string `toml:"fallback"`
 }
 
@@ -71,9 +72,10 @@ type LangModelOverride struct {
 
 // PromptsConfig holds per-language prompt file or inline text.
 type PromptsConfig struct {
-	PL PromptSpec `toml:"pl,omitempty"`
-	EN PromptSpec `toml:"en,omitempty"`
-	ES PromptSpec `toml:"es,omitempty"`
+	PL   PromptSpec `toml:"pl,omitempty"`
+	EN   PromptSpec `toml:"en,omitempty"`
+	ES   PromptSpec `toml:"es,omitempty"`
+	Auto PromptSpec `toml:"auto,omitempty"`
 }
 
 // PromptSpec references a prompt file or inline markdown text.
@@ -110,7 +112,8 @@ func Defaults() Config {
 			PL:       "lazy-note-pl",
 			EN:       "lazy-note-en",
 			ES:       "lazy-note-es",
-			Fallback: "lazy-note-en",
+			Auto:     "lazy-note-auto",
+			Fallback: "lazy-note-auto",
 		},
 		Model: ModelConfig{
 			VoiceModelID:    "sw-elevenlabs-scribe",
@@ -124,9 +127,10 @@ func Defaults() Config {
 			},
 		},
 		Prompts: PromptsConfig{
-			PL: PromptSpec{File: "prompts/note.pl.md"},
-			EN: PromptSpec{File: "prompts/note.en.md"},
-			ES: PromptSpec{File: "prompts/note.es.md"},
+			PL:   PromptSpec{File: "prompts/note.pl.md"},
+			EN:   PromptSpec{File: "prompts/note.en.md"},
+			ES:   PromptSpec{File: "prompts/note.es.md"},
+			Auto: PromptSpec{File: "prompts/note.auto.md"},
 		},
 		Publish: PublishConfig{
 			Enabled:     true,
@@ -190,6 +194,9 @@ func (c *Config) applyMissingDefaults() {
 	if c.Modes.ES == "" {
 		c.Modes.ES = def.Modes.ES
 	}
+	if c.Modes.Auto == "" {
+		c.Modes.Auto = def.Modes.Auto
+	}
 	if c.Modes.Fallback == "" {
 		c.Modes.Fallback = def.Modes.Fallback
 	}
@@ -207,6 +214,9 @@ func (c *Config) applyMissingDefaults() {
 	}
 	if c.Prompts.ES.File == "" && c.Prompts.ES.Text == "" {
 		c.Prompts.ES = def.Prompts.ES
+	}
+	if c.Prompts.Auto.File == "" && c.Prompts.Auto.Text == "" {
+		c.Prompts.Auto = def.Prompts.Auto
 	}
 	if c.Publish.NotesDir == "" {
 		c.Publish.NotesDir = def.Publish.NotesDir

@@ -21,6 +21,8 @@ import (
 type Result struct {
 	Scanned   int
 	Submitted int
+	Harvested int
+	Published int
 	Skipped   int
 	Errors    int
 	Watermark int64
@@ -138,6 +140,16 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 			continue
 		}
 
+		if cfg.Publish.Enabled {
+			harvestAndPublish(ctx, cfg, database, harvestTarget{
+				RecordingID: meta.RecordingID,
+				Title:       meta.Title,
+				Language:    lang,
+				ModeKey:     modeKey,
+				SubmittedAt: time.Now(),
+			}, result)
+		}
+
 		if !cfg.Sync.KeepAudio {
 			_ = os.Remove(audioPath)
 		}
@@ -167,9 +179,13 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 		cleanupParquets(jobs)
 	}
 
+	processHarvestPublishBacklog(ctx, cfg, database, result)
+
 	slog.Info("sync pass finished",
 		"scanned", result.Scanned,
 		"submitted", result.Submitted,
+		"harvested", result.Harvested,
+		"published", result.Published,
 		"skipped", result.Skipped,
 		"errors", result.Errors,
 		"watermark", result.Watermark,
@@ -228,7 +244,8 @@ func listNewMetas(
 ) ([]metaJob, int, int64, error) {
 	knownFilter := make(map[int64]struct{})
 	for id, status := range known {
-		if status == db.StatusSubmitted || status == db.StatusPending {
+		switch status {
+		case db.StatusPending, db.StatusSubmitted, db.StatusHarvested, db.StatusPublished:
 			knownFilter[id] = struct{}{}
 		}
 	}

@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/jborkowski/lazy-notes/internal/config"
 	"github.com/jborkowski/lazy-notes/internal/db"
 	"github.com/jborkowski/lazy-notes/internal/paths"
+	lnsync "github.com/jborkowski/lazy-notes/internal/sync"
 )
 
 func loadConfig() (*config.Config, error) {
@@ -22,4 +24,10 @@ func openDB() (*db.DB, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 	return database, nil
+}
+
+func printSyncResult(result *lnsync.Result) {
+	fmt.Fprintf(os.Stdout, "scanned=%d submitted=%d harvested=%d published=%d skipped=%d errors=%d watermark=%d\n",
+		result.Scanned, result.Submitted, result.Harvested, result.Published,
+		result.Skipped, result.Errors, result.Watermark)
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
 	lnsync "github.com/jborkowski/lazy-notes/internal/sync"
 	"github.com/spf13/cobra"
@@ -29,8 +28,7 @@ var syncCmd = &cobra.Command{
 			return exitErr(fmt.Errorf("sync: %w", err))
 		}
 
-		fmt.Fprintf(os.Stdout, "scanned=%d submitted=%d skipped=%d errors=%d watermark=%d\n",
-			result.Scanned, result.Submitted, result.Skipped, result.Errors, result.Watermark)
+		printSyncResult(result)
 		return nil
 	},
 }
