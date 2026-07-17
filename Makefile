@@ -120,7 +120,7 @@ dist-arm64:
 	@V="$(VERSION)"; V="$${V#v}"; TAG="v$$V"; \
 	NAME="lazy-notes-$${TAG}-darwin-arm64"; \
 	rm -rf "dist/$$NAME" "dist/$${NAME}.tar.gz"; mkdir -p "dist/$$NAME/config"; \
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o "dist/$$NAME/lazy-notes" ./cmd/lazy-notes; \
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=$$V" -o "dist/$$NAME/lazy-notes" ./cmd/lazy-notes; \
 	/bin/cp README.md "dist/$$NAME/"; \
 	rsync -a config/ "dist/$$NAME/config/"; \
 	tar -C dist -czf "dist/$${NAME}.tar.gz" "$$NAME"; \

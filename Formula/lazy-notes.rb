@@ -38,7 +38,7 @@ class LazyNotes < Formula
     root = (buildpath/"build-src").directory? ? buildpath/"build-src" : buildpath
 
     cd root do
-      system "go", "build", *std_go_args(ldflags: "-s -w"), "./cmd/lazy-notes"
+      system "go", "build", *std_go_args(ldflags: "-s -w -X main.version=#{version}"), "./cmd/lazy-notes"
     end
 
     config_dir = root/"config"
@@ -108,6 +108,7 @@ class LazyNotes < Formula
 
   test do
     assert_match "lazy-notes", shell_output("#{bin}/lazy-notes --help")
+    assert_equal version.to_s, shell_output("#{bin}/lazy-notes --version").strip
     assert_match "superwhisper", shell_output("#{bin}/superwhisper --help")
     assert_predicate Formula["hf"].opt_bin/"hf", :exist?
     assert_predicate Formula["gogcli"].opt_bin/"gog", :exist?

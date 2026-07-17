@@ -145,6 +145,11 @@ print(f"updated {path} ({mode})")
 PY
 }
 
+LDFLAGS() {
+  # Wire Formula/release VERSION into lazy-notes --version.
+  printf '%s' "-s -w -X main.version=${VERSION}"
+}
+
 build_one() {
   local goarch="$1"
   local name arch_label outdir tarball
@@ -163,12 +168,12 @@ build_one() {
     local tmp="$DIST_DIR/.universal-build"
     rm -rf "$tmp"
     mkdir -p "$tmp"
-    GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o "$tmp/lazy-notes-arm64" ./cmd/lazy-notes
-    GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o "$tmp/lazy-notes-amd64" ./cmd/lazy-notes
+    GOOS=darwin GOARCH=arm64 go build -ldflags="$(LDFLAGS)" -o "$tmp/lazy-notes-arm64" ./cmd/lazy-notes
+    GOOS=darwin GOARCH=amd64 go build -ldflags="$(LDFLAGS)" -o "$tmp/lazy-notes-amd64" ./cmd/lazy-notes
     lipo -create -output "$outdir/lazy-notes" "$tmp/lazy-notes-arm64" "$tmp/lazy-notes-amd64"
     rm -rf "$tmp"
   else
-    GOOS=darwin GOARCH="$goarch" go build -ldflags="-s -w" -o "$outdir/lazy-notes" ./cmd/lazy-notes
+    GOOS=darwin GOARCH="$goarch" go build -ldflags="$(LDFLAGS)" -o "$outdir/lazy-notes" ./cmd/lazy-notes
   fi
   /bin/cp README.md "$outdir/"
   rsync -a --delete config/ "$outdir/config/"
