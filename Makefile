@@ -12,7 +12,7 @@ all: install
 help:
 	@echo "make deps       brew tap/install memo + gogcli + hf go duckdb ffmpeg"
 	@echo "make install    pack sources into tap + brew install"
-	@echo "make setup      lazy-notes setup"
+	@echo "make setup      lazy-notes onboard (step-by-step + doctor)"
 	@echo "make start|stop|restart"
 	@echo "make status|sync|logs"
 	@echo "make uninstall"
@@ -59,7 +59,7 @@ install: deps pack
 	fi
 
 setup: install
-	lazy-notes setup
+	lazy-notes onboard
 
 start:
 	$(BREW) services start $(FORMULA)

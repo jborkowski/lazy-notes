@@ -101,7 +101,8 @@ class LazyNotes < Formula
         ~/.config/lazy-notes/hf_token
         HF_TOKEN / hf auth login
 
-      lazy-notes setup && make start
+      lazy-notes onboard && make start
+      lazy-notes doctor
     EOS
   end
 

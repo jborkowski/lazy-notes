@@ -3,8 +3,9 @@
 Make → Homebrew. Lazy HF → SuperWhisper → harvest → Notes (disk + Apple Notes).
 
 ```bash
-make install && make setup && make start
+make install && lazy-notes onboard && make start
 make sync
+lazy-notes doctor    # re-check deps / auth / watchers
 lazy-notes publish   # retry harvest/publish backlog
 ```
 
@@ -15,7 +16,7 @@ lazy-notes publish   # retry harvest/publish backlog
 `make install` creates a local Homebrew tap, packs this checkout, and builds from source:
 
 ```bash
-make install && make setup && make start
+make install && lazy-notes onboard && make start
 ```
 
 It also pulls in:
@@ -35,7 +36,7 @@ brew tap antoniorodr/memo
 brew tap openclaw/tap
 brew tap jborkowski/lazy-notes https://github.com/jborkowski/lazy-notes
 brew install --build-from-source jborkowski/lazy-notes/lazy-notes
-lazy-notes setup
+lazy-notes onboard
 brew services start jborkowski/lazy-notes/lazy-notes
 ```
 
@@ -95,11 +96,23 @@ gog auth add you@example.com --services drive
 
 | Command | Purpose |
 |---------|---------|
-| `lazy-notes setup` | Config, SuperWhisper CLI, Note modes |
+| `lazy-notes onboard` | Step-by-step first-run setup, then `doctor` |
+| `lazy-notes doctor` | Check deps, config, HF auth, memo/gog, watchers |
+| `lazy-notes setup` | Config, SuperWhisper CLI, Note modes (non-interactive) |
 | `lazy-notes sync` | One HF → SuperWhisper pass (+ harvest/publish when enabled) |
 | `lazy-notes publish` | Harvest submitted + publish harvested backlog only |
 | `lazy-notes status` | Watermark and per-status counts (incl. harvested/published) |
 | `lazy-notes daemon` | Sync on interval (via `make start` / brew services) |
+
+### Onboarding & doctor
+
+```bash
+lazy-notes onboard          # numbered steps 1–9, ends with doctor
+lazy-notes doctor           # ok / warn / fail with fix hints
+lazy-notes doctor --offline # skip live Hugging Face access probe
+```
+
+`onboard` is idempotent: re-run after editing `config.toml` or installing brew deps.
 
 ## Lazy sync
 
