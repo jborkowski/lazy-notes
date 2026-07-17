@@ -1,7 +1,7 @@
 class LazyNotes < Formula
   desc "Pull Hugging Face voice memories into SuperWhisper"
   homepage "https://github.com/jborkowski/lazy-notes"
-  version "0.1.2"
+  version "0.1.3"
   license "MIT"
 
   # Prefer a locally packed tarball from `make install`; otherwise build the
@@ -17,8 +17,7 @@ class LazyNotes < Formula
     sha256 local_tarball.sha256
   else
     url "https://github.com/jborkowski/lazy-notes.git",
-        tag:      "v0.1.2",
-        revision: "9ea74f707c6a1dfbfb519920ad9f5312ed99a1d7"
+        tag: "v0.1.3"
   end
 
   depends_on "go" => :build
