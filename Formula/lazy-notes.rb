@@ -17,7 +17,8 @@ class LazyNotes < Formula
     sha256 local_tarball.sha256
   else
     url "https://github.com/jborkowski/lazy-notes.git",
-        tag: "v0.1.4"
+        tag:      "v0.1.4",
+        revision: "42ac069ceedfc91e033c4f12f52fd3feeb14b989"
   end
 
   depends_on "go" => :build
