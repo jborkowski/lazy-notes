@@ -106,7 +106,9 @@ func HarvestRecent(ctx context.Context, limit int) ([]Transcript, error) {
 // MatchRecording tries to match a submitted local recording to a transcript:
 // prefer same modeName contains "Lazy Note", fromFile true, recent CreatedAt,
 // and optional duration proximity. Return best match or nil.
-func MatchRecording(transcripts []Transcript, modeKey string, submittedAt time.Time) *Transcript {
+// exclude is a set of SuperWhisper IDs already claimed by other recordings;
+// those transcripts are never reused (prevents backlog clamp onto one result).
+func MatchRecording(transcripts []Transcript, modeKey string, submittedAt time.Time, exclude map[string]struct{}) *Transcript {
 	if len(transcripts) == 0 {
 		return nil
 	}
@@ -120,6 +122,9 @@ func MatchRecording(transcripts []Transcript, modeKey string, submittedAt time.T
 	for i := range transcripts {
 		t := &transcripts[i]
 		if !t.FromFile || strings.TrimSpace(t.BestText()) == "" {
+			continue
+		}
+		if _, taken := exclude[strings.TrimSpace(t.ID)]; taken {
 			continue
 		}
 
@@ -225,7 +230,8 @@ func parseCreatedAt(raw string) (time.Time, bool) {
 
 // WaitAndHarvest sleeps briefly then polls HarvestRecent until MatchRecording
 // finds a transcript or polls are exhausted.
-func WaitAndHarvest(ctx context.Context, modeKey string, submittedAt time.Time, wait time.Duration, polls int) (*Transcript, error) {
+// exclude lists SuperWhisper IDs already claimed; they are skipped every poll.
+func WaitAndHarvest(ctx context.Context, modeKey string, submittedAt time.Time, wait time.Duration, polls int, exclude map[string]struct{}) (*Transcript, error) {
 	if polls <= 0 {
 		polls = 1
 	}
@@ -246,7 +252,7 @@ func WaitAndHarvest(ctx context.Context, modeKey string, submittedAt time.Time, 
 		if err != nil {
 			return nil, err
 		}
-		if match := MatchRecording(transcripts, modeKey, submittedAt); match != nil {
+		if match := MatchRecording(transcripts, modeKey, submittedAt, exclude); match != nil {
 			return match, nil
 		}
 

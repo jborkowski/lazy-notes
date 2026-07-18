@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -132,6 +133,20 @@ WHERE recording_id = ?`,
 }
 
 func (d *DB) MarkHarvested(id int64, swID, body, notePath string) error {
+	swID = strings.TrimSpace(swID)
+	body = strings.TrimSpace(body)
+	if swID == "" {
+		return fmt.Errorf("mark harvested %d: empty sw_id", id)
+	}
+	if body == "" {
+		return fmt.Errorf("mark harvested %d: empty body", id)
+	}
+	if other, claimed, err := d.swIDClaimedByOther(swID, id); err != nil {
+		return fmt.Errorf("mark harvested %d: check sw_id: %w", id, err)
+	} else if claimed {
+		return fmt.Errorf("mark harvested %d: sw_id %s already claimed by recording %d", id, swID, other)
+	}
+
 	res, err := d.sql.Exec(`
 UPDATE recordings
 SET status = ?, sw_id = ?, body = ?, note_path = ?, error = ''
@@ -188,6 +203,10 @@ func (d *DB) GetByID(id int64) (*Recording, error) {
 		return nil, fmt.Errorf("get recording %d: %w", id, err)
 	}
 	return &r, nil
+}
+
+func (d *DB) ListPending() ([]Recording, error) {
+	return d.listByStatus(StatusPending)
 }
 
 func (d *DB) ListSubmittedAwaitingHarvest() ([]Recording, error) {

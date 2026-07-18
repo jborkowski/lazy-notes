@@ -44,6 +44,14 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 	}
 
 	result := &Result{}
+
+	if n, err := database.RepairPoisonedHarvestClaims(); err != nil {
+		slog.Error("repair poisoned harvest claims failed", "err", err)
+		result.Errors++
+	} else if n > 0 {
+		slog.Warn("repaired poisoned harvest claims; will resubmit", "reset", n)
+	}
+
 	preferOriginal := cfg.AudioPrefer == "original"
 	minDuration := cfg.Sync.MinDurationSeconds
 	submitDelay := time.Duration(cfg.Sync.SubmitDelaySeconds * float64(time.Second))
@@ -179,6 +187,7 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 		cleanupParquets(jobs)
 	}
 
+	retryPendingHF(ctx, cfg, database, client, preferOriginal, submitDelay, fallback, result)
 	processHarvestPublishBacklog(ctx, cfg, database, result)
 
 	slog.Info("sync pass finished",
@@ -192,6 +201,87 @@ func Run(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, err
 	)
 
 	return result, nil
+}
+
+func retryPendingHF(
+	ctx context.Context,
+	cfg *config.Config,
+	database *db.DB,
+	client *hf.Client,
+	preferOriginal bool,
+	submitDelay time.Duration,
+	fallback string,
+	result *Result,
+) {
+	pending, err := database.ListPending()
+	if err != nil {
+		slog.Error("list pending failed", "err", err)
+		result.Errors++
+		return
+	}
+	max := cfg.Sync.MaxPerSync
+	n := 0
+	for _, rec := range pending {
+		if err := ctx.Err(); err != nil {
+			return
+		}
+		if max > 0 && n >= max {
+			return
+		}
+
+		ext := ".flac"
+		if preferOriginal {
+			ext = ".m4a"
+		}
+		audioPath := rec.AudioPath
+		if audioPath == "" {
+			audioPath = filepath.Join(paths.AudioCacheDir(), fmt.Sprintf("%d%s", rec.RecordingID, ext))
+		}
+		if _, statErr := os.Stat(audioPath); statErr != nil {
+			if err := paths.EnsureDir(paths.AudioCacheDir()); err != nil {
+				slog.Error("ensure audio cache", "err", err)
+				result.Errors++
+				return
+			}
+			if err := client.ExtractAudioByID(ctx, rec.RecordingID, preferOriginal, audioPath, cfg.Sync.KeepShards); err != nil {
+				slog.Error("re-extract audio failed", "recording_id", rec.RecordingID, "err", err)
+				_ = database.MarkError(rec.RecordingID, err.Error())
+				result.Errors++
+				continue
+			}
+		}
+
+		lang := rec.Language
+		if lang == "" {
+			lang = language.Detect("", audioPath, cfg.Languages, fallback)
+		}
+		modeKey := rec.ModeKey
+		if modeKey == "" {
+			modeKey = cfg.ModeKey(lang)
+		}
+
+		if err := superwhisper.Submit(audioPath, modeKey, submitDelay); err != nil {
+			slog.Error("resubmit failed", "recording_id", rec.RecordingID, "mode", modeKey, "err", err)
+			_ = database.MarkError(rec.RecordingID, err.Error())
+			result.Errors++
+			continue
+		}
+		if err := database.MarkSubmitted(rec.RecordingID, lang, modeKey, audioPath); err != nil {
+			slog.Error("mark submitted failed", "recording_id", rec.RecordingID, "err", err)
+			result.Errors++
+			continue
+		}
+		if !cfg.Sync.KeepAudio {
+			_ = os.Remove(audioPath)
+		}
+		result.Submitted++
+		n++
+		slog.Info("resubmitted recording",
+			"recording_id", rec.RecordingID,
+			"language", lang,
+			"mode", modeKey,
+		)
+	}
 }
 
 func bootstrapLatest(ctx context.Context, client *hf.Client, keepShard bool) (int64, error) {

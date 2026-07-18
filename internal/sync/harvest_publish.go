@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jborkowski/lazy-notes/internal/config"
@@ -29,6 +30,12 @@ type harvestTarget struct {
 // It is used by sync passes and by `lazy-notes publish`.
 func ProcessHarvestPublish(ctx context.Context, cfg *config.Config, database *db.DB) (*Result, error) {
 	result := &Result{}
+	if n, err := database.RepairPoisonedHarvestClaims(); err != nil {
+		slog.Error("repair poisoned harvest claims failed", "err", err)
+		result.Errors++
+	} else if n > 0 {
+		slog.Warn("repaired poisoned harvest claims; will resubmit on next sync", "reset", n)
+	}
 	processHarvestPublishBacklog(ctx, cfg, database, result)
 	return result, nil
 }
@@ -69,7 +76,14 @@ func processHarvestPublishBacklog(ctx context.Context, cfg *config.Config, datab
 }
 
 func harvestAndPublish(ctx context.Context, cfg *config.Config, database *db.DB, target harvestTarget, result *Result) {
-	tr, err := superwhisper.WaitAndHarvest(ctx, target.ModeKey, target.SubmittedAt, defaultHarvestWait, defaultHarvestPolls)
+	exclude, err := claimedSwExclude(database)
+	if err != nil {
+		slog.Error("list claimed sw_ids failed", "err", err)
+		result.Errors++
+		return
+	}
+
+	tr, err := superwhisper.WaitAndHarvest(ctx, target.ModeKey, target.SubmittedAt, defaultHarvestWait, defaultHarvestPolls, exclude)
 	if err != nil {
 		slog.Error("wait and harvest failed",
 			"recording_id", target.RecordingID,
@@ -87,7 +101,7 @@ func harvestAndPublish(ctx context.Context, cfg *config.Config, database *db.DB,
 		return
 	}
 
-	body := tr.BestText()
+	body := strings.TrimSpace(tr.BestText())
 	if body == "" {
 		slog.Warn("harvest matched but text empty, will retry later",
 			"recording_id", target.RecordingID,
@@ -114,7 +128,25 @@ func harvestAndPublish(ctx context.Context, cfg *config.Config, database *db.DB,
 	publishHarvested(ctx, cfg, database, rec, result)
 }
 
+func claimedSwExclude(database *db.DB) (map[string]struct{}, error) {
+	claimed, err := database.ClaimedSwIDs()
+	if err != nil {
+		return nil, err
+	}
+	exclude := make(map[string]struct{}, len(claimed))
+	for swID := range claimed {
+		exclude[swID] = struct{}{}
+	}
+	return exclude, nil
+}
+
 func publishHarvested(ctx context.Context, cfg *config.Config, database *db.DB, rec db.Recording, result *Result) {
+	if strings.TrimSpace(rec.Body) == "" {
+		slog.Error("refuse publish with empty body", "recording_id", rec.RecordingID, "sw_id", rec.SwID)
+		result.Errors++
+		return
+	}
+
 	note := publish.Note{
 		Title:       rec.Title,
 		Body:        rec.Body,
